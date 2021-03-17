@@ -1,0 +1,26 @@
+﻿using System;
+using WebApi.HypermediaExtensions.ErrorHandling;
+using WebApi.HypermediaExtensions.Exceptions;
+
+namespace ChickenDoorWebHost.Problems
+{
+    public interface IProblemFactory
+    {
+        ExceptionProblemJson Exception(HypermediaFormatterException hypermediaFormatterException);
+
+        ExceptionProblemJson Exception(HypermediaException hypermediaException);
+
+        ExceptionProblemJson Exception(Exception exception);
+
+        ProblemJson NotFound();
+
+        ProblemJson EntityNotFound(string name, string id);
+
+        ProblemJson ServiceUnavailable();
+
+        ProblemJson BadParameters();
+
+        ProblemJson OperationNotAvailable();
+        ProblemJson NotAuthorized();
+    }
+}
