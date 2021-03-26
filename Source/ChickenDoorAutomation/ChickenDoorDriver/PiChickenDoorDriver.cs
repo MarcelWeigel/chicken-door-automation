@@ -8,7 +8,7 @@ using FunicularSwitch;
 
 namespace ChickenDoorDriver
 {
-    public class PiChickenDoorDriver : IChickenDoorDriver
+    public class PiChickenDoorDriver : IDriver
     {
         private const int PinLed = 18;
         private const int PinPhotoelectricBarrier = 15;

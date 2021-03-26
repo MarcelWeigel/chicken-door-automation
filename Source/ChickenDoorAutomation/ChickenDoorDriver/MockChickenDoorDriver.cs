@@ -4,7 +4,7 @@ using FunicularSwitch;
 
 namespace ChickenDoorDriver
 {
-    public class MockChickenDoorDriver : IChickenDoorDriver
+    public class MockChickenDoorDriver : IDriver
     {
         private Light _light = new Light(LightMode.Manuel, LightState.Off);
 

@@ -7,12 +7,13 @@ namespace ChickenDoorDriver.Motor
 {
     class Pin
     {
-        public const int MotorUp = 13;
-        public const int MotorDown = 13;
-        public const int HallUp = 13;
-        public const int HallDown = 13;
-        public const int Enabled1 = 13;
-        public const int Enabled2 = 13;
+        public const int MotorLeft = 18;
+        public const int MotorRight = 16;
+        public const int MotorLeftEnable = 22;
+        public const int MotorRightEnable = 12;
+        public const int HallBottom = 11;
+        public const int HallTop = 13;
+
     }
     public class PiMotorDriver : IMotorDriver
     {
@@ -28,12 +29,12 @@ namespace ChickenDoorDriver.Motor
         private void Init()
         {
             _controller = new GpioController(PinNumberingScheme.Board);
-            _controller.OpenPin(Pin.HallDown, PinMode.InputPullUp);
-            _controller.OpenPin(Pin.HallUp, PinMode.InputPullUp);
-            _controller.OpenPin(Pin.Enabled1, PinMode.Output);
-            _controller.OpenPin(Pin.Enabled2, PinMode.Output);
-            _controller.OpenPin(Pin.MotorDown, PinMode.Output);
-            _controller.OpenPin(Pin.MotorUp, PinMode.Output);
+            _controller.OpenPin(Pin.HallBottom, PinMode.InputPullUp);
+            _controller.OpenPin(Pin.HallTop, PinMode.InputPullUp);
+            _controller.OpenPin(Pin.MotorLeftEnable, PinMode.Output);
+            _controller.OpenPin(Pin.MotorRightEnable, PinMode.Output);
+            _controller.OpenPin(Pin.MotorLeft, PinMode.Output);
+            _controller.OpenPin(Pin.MotorRight, PinMode.Output);
 
             // TODO PWM
 
@@ -52,17 +53,17 @@ namespace ChickenDoorDriver.Motor
                 {
                     if (ct.IsCancellationRequested)
                     {
-                        _controller.Write(Pin.MotorUp, PinValue.Low);
-                        _controller.Write(Pin.MotorDown, PinValue.Low);
+                        _controller.Write(Pin.MotorLeft, PinValue.Low);
+                        _controller.Write(Pin.MotorRight, PinValue.Low);
                         _currentDirection = MotorDirection.None;
                         isRunning = false;
-                    } else if (_controller.Read(Pin.HallUp) == PinValue.High)
+                    } else if (_controller.Read(Pin.HallBottom) == PinValue.High)
                     {
-                        _controller.Write(Pin.MotorUp, PinValue.Low);
+                        _controller.Write(Pin.MotorLeft, PinValue.Low);
                         _currentDirection = MotorDirection.None;
-                    } else if (_controller.Read(Pin.HallDown) == PinValue.High)
+                    } else if (_controller.Read(Pin.HallTop) == PinValue.High)
                     {
-                        _controller.Write(Pin.MotorDown, PinValue.Low);
+                        _controller.Write(Pin.MotorRight, PinValue.Low);
                         _currentDirection = MotorDirection.None;
                     }
                     Thread.Sleep(100);
@@ -72,8 +73,8 @@ namespace ChickenDoorDriver.Motor
 
         private void Drive(MotorDirection direction, int speed)
         {
-            _controller.Write(Pin.MotorUp, PinValue.Low);
-            _controller.Write(Pin.MotorDown, PinValue.Low);
+            _controller.Write(Pin.MotorLeft, PinValue.Low);
+            _controller.Write(Pin.MotorRight, PinValue.Low);
             _currentDirection = direction;
             _currentSpeed = speed;
             switch (direction)
@@ -81,10 +82,10 @@ namespace ChickenDoorDriver.Motor
                 case MotorDirection.None:
                     break;
                 case MotorDirection.Up:
-                    _controller.Write(Pin.MotorUp, PinValue.High);
+                    _controller.Write(Pin.MotorLeft, PinValue.High);
                     break;
                 case MotorDirection.Down:
-                    _controller.Write(Pin.MotorDown, PinValue.High);
+                    _controller.Write(Pin.MotorRight, PinValue.High);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(direction), direction, null);

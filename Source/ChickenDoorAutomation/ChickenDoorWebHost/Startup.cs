@@ -7,6 +7,7 @@ using Bluehands.Hypermedia.MediaTypes;
 using ChickenDoorDriver;
 using ChickenDoorWebHost.GlobalExceptionHandler;
 using ChickenDoorWebHost.Problems;
+using Driver;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -53,17 +54,15 @@ namespace ChickenDoorWebHost
             services.AddSingleton<IProblemFactory, ProblemFactory>();
             builder.AddMvcOptions(o => { o.Filters.Add(new GlobalExceptionFilter(services)); });
 
-            services.AddSingleton<IChickenDoorDriver, PiChickenDoorDriver>();
-            //services.AddSingleton<IChickenDoorDriver, MockChickenDoorDriver>();
+            //services.AddSingleton<IDriver, MockDriver>();
+            services.AddSingleton<IDriver, PiDriver>();
 
-            services.AddTransient<TurnLightOnCommand>();
-            services.AddTransient<TurnLightOffCommand>();
-            services.AddTransient<SwitchToManuelModeCommand>();
-            services.AddTransient<SwitchToAutoModeCommand>();
-            services.AddTransient<LightQuery>();
+            services.AddTransient<OpenDoorCommand>();
+            services.AddTransient<CloseDoorCommand>();
+            services.AddTransient<GetDoorDirectionQuery>();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver)
         {
             if (env.IsDevelopment())
             {
@@ -96,6 +95,8 @@ namespace ChickenDoorWebHost
                 context.Response.StatusCode = problem.StatusCode;
                 await context.Response.WriteAsync(JsonConvert.SerializeObject(problem));
             });
+
+            driver.Init();
         }
     }
 }

@@ -1,10 +1,10 @@
 ﻿using WebApi.HypermediaExtensions.Hypermedia.Actions;
 
-namespace ChickenDoorWebHost.Controller.Light.Actions
+namespace ChickenDoorWebHost.Controller.Door.Actions
 {
-    public class TurnLightOnAction : HypermediaAction
+    public class CloseDoorAction : HypermediaAction
     {
-        public TurnLightOnAction(bool canExecute) : base(() => canExecute, null)
+        public CloseDoorAction(bool canExecute) : base(() => canExecute, null)
         {
         }
 

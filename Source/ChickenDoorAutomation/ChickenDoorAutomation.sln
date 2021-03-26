@@ -3,13 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31025.194
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChickenDoorWebHost", "ChickenDoorWebHost\ChickenDoorWebHost.csproj", "{01829F89-4FE9-4BC0-93CD-19701710A19F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChickenDoorWebHost", "ChickenDoorWebHost\ChickenDoorWebHost.csproj", "{01829F89-4FE9-4BC0-93CD-19701710A19F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChickenDoorDriver", "ChickenDoorDriver\ChickenDoorDriver.csproj", "{F3277A97-787F-4821-AD39-CB9864907832}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application", "Application\Application.csproj", "{0D7AD79C-C698-41E9-8D6A-EA12F39F9C8E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application", "Application\Application.csproj", "{0D7AD79C-C698-41E9-8D6A-EA12F39F9C8E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{FFFFBAA4-CD06-46A0-9E07-E22D9B7B7C56}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Driver", "Driver\Driver.csproj", "{25C06449-5BBC-4DDB-977F-6ECBD012CE02}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,18 +19,14 @@ Global
 		{01829F89-4FE9-4BC0-93CD-19701710A19F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01829F89-4FE9-4BC0-93CD-19701710A19F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01829F89-4FE9-4BC0-93CD-19701710A19F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F3277A97-787F-4821-AD39-CB9864907832}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F3277A97-787F-4821-AD39-CB9864907832}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F3277A97-787F-4821-AD39-CB9864907832}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F3277A97-787F-4821-AD39-CB9864907832}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0D7AD79C-C698-41E9-8D6A-EA12F39F9C8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0D7AD79C-C698-41E9-8D6A-EA12F39F9C8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0D7AD79C-C698-41E9-8D6A-EA12F39F9C8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0D7AD79C-C698-41E9-8D6A-EA12F39F9C8E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FFFFBAA4-CD06-46A0-9E07-E22D9B7B7C56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FFFFBAA4-CD06-46A0-9E07-E22D9B7B7C56}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FFFFBAA4-CD06-46A0-9E07-E22D9B7B7C56}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FFFFBAA4-CD06-46A0-9E07-E22D9B7B7C56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25C06449-5BBC-4DDB-977F-6ECBD012CE02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25C06449-5BBC-4DDB-977F-6ECBD012CE02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25C06449-5BBC-4DDB-977F-6ECBD012CE02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25C06449-5BBC-4DDB-977F-6ECBD012CE02}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
