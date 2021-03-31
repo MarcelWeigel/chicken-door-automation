@@ -15,8 +15,10 @@ using Iot.Device.Amg88xx;
 using Iot.Device.Bh1750fvi;
 using Iot.Device.Bmxx80;
 using Iot.Device.Bmxx80.PowerMode;
+using Iot.Device.Imu;
 using Iot.Device.Vl53L0X;
 using UnitsNet;
+using MeasurementMode = Iot.Device.Magnetometer.MeasurementMode;
 
 namespace Driver
 {
@@ -55,6 +57,7 @@ namespace Driver
         private Vl53L0X _vl53L0X;
         private Bh1750fvi _bh1750Fvi;
         private Amg88xx _amg88xx;
+        private Mpu9250 _mpu9250;
 
         public Result<Unit> Init()
         {
@@ -97,7 +100,11 @@ namespace Driver
             //Console.WriteLine($"Relative humidity: {humValue.Percent:#.##}%");
             //Console.WriteLine($"Estimated altitude: {altValue.Meters:#} m");
 
-            _amg88xx = new Amg88xx(I2cDevice.Create(new I2cConnectionSettings(1, Amg88xx.AlternativeI2cAddress)));
+            //_amg88xx = new Amg88xx(I2cDevice.Create(new I2cConnectionSettings(1, Amg88xx.AlternativeI2cAddress)));
+
+            _mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu9250.DefaultI2cAddress)));
+
+            _mpu9250.MagnetometerMeasurementMode = MeasurementMode.ContinuousMeasurement100Hz;
 
             Thread.Sleep(100);
 
@@ -177,17 +184,37 @@ namespace Driver
 
                     Thread.Sleep(500);
 
-                    Console.WriteLine($"Start Read Image");
-                    _amg88xx.ReadImage();
-                    Console.WriteLine($"Finished Read Image");
-                    Console.WriteLine($"Get Image");
-                    var temperatureImage = _amg88xx.TemperatureImage;
-                    Console.WriteLine($"Start Convert Image");
-                    //PrintTemperatureImage(temperatureImage);
-                    var image = ConvertTemperatureImage(temperatureImage);
-                    ConsoleWriteImage(image);
-                    Console.WriteLine($"Finished Convert Image");
+                    //Console.WriteLine($"Start Read Image");
+                    //_amg88xx.ReadImage();
+                    //Console.WriteLine($"Finished Read Image");
+                    //Console.WriteLine($"Get Image");
+                    //var temperatureImage = _amg88xx.TemperatureImage;
+                    //Console.WriteLine($"Start Convert Image");
+                    ////PrintTemperatureImage(temperatureImage);
+                    //var image = ConvertTemperatureImage(temperatureImage);
+                    //ConsoleWriteImage(image);
+                    //Console.WriteLine($"Finished Convert Image");
 
+                    var gyro = _mpu9250.GetGyroscopeReading();
+                    Console.WriteLine($"Gyro X = {gyro.X,15}");
+                    Console.WriteLine($"Gyro Y = {gyro.Y,15}");
+                    Console.WriteLine($"Gyro Z = {gyro.Z,15}");
+                    var acc = _mpu9250.GetAccelerometer();
+                    Console.WriteLine($"Acc X = {acc.X,15}");
+                    Console.WriteLine($"Acc Y = {acc.Y,15}");
+                    Console.WriteLine($"Acc Z = {acc.Z,15}");
+                    Console.WriteLine($"Temp = {_mpu9250.GetTemperature().DegreesCelsius.ToString("0.00")} °C");
+                    var magne = _mpu9250.ReadMagnetometer(true);
+                    Console.WriteLine($"Mag X = {magne.X,15}");
+                    Console.WriteLine($"Mag Y = {magne.Y,15}");
+                    Console.WriteLine($"Mag Z = {magne.Z,15}");
+
+
+                    //var mag = _mpu9250.CalibrateMagnetometer();
+                    //Console.WriteLine($"Correction factor bias:");
+                    //Console.WriteLine($"Mag X = {_mpu9250.MagnometerBias.X}");
+                    //Console.WriteLine($"Mag Y = {_mpu9250.MagnometerBias.Y}");
+                    //Console.WriteLine($"Mag Z = {_mpu9250.MagnometerBias.Z}");
                 }
             }, _tokenSource.Token);
         }
