@@ -7,6 +7,7 @@ using Bluehands.Hypermedia.MediaTypes;
 using ChickenDoorDriver;
 using ChickenDoorWebHost.GlobalExceptionHandler;
 using ChickenDoorWebHost.Problems;
+using ChickenDoorWebHost.SignalR;
 using Driver;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -26,6 +27,7 @@ namespace ChickenDoorWebHost
         {
             services.AddRouting(options => options.LowercaseUrls = false);
             services.AddMvc().AddNewtonsoftJson();
+            services.AddSignalR();
 
             var builder = services.AddMvcCore(options =>
             {
@@ -82,10 +84,13 @@ namespace ChickenDoorWebHost
             );
 
             app.UseRouting();
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<SensorHub>("/hub");
             });
 
             app.Run(async context =>

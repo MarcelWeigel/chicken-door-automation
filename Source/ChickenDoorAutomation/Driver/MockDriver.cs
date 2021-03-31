@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Application.Driver;
 using ChickenDoorDriver;
@@ -94,5 +95,14 @@ namespace Driver
         public Result<bool> IsClosingDoor() => _currentDirection == DoorDirection.Down;
 
         public Result<DoorDirection> GetDirection() => _currentDirection;
+        public Result<string> ReadHeatMap()
+        {
+            return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsIAAA7CARUoSoAAAAEVSURBVHhe7duxDQIxEABBQxdUgUho4juigO+ImigDEhfwyWstNJPYoaXVZb7L/fH8DjLXeRIRICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxE7/F7S/P/N2zGu7zds5VnuPCYgJEBMgJkBMgJgAMQFiAsQEiAkQEyBmRyxmAmICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyA2HI7YquxI/bnBIgJEBMgJkBMgJgAMQFiAsQEiAkQsyMWMwExAWICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQGqMHwwcEaU0wlqLAAAAAElFTkSuQmCC";
+        }
+
+        public Result<string> ReadDistance()
+        {
+            return "1 cm";
+        }
     }
 }

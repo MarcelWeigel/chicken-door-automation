@@ -5,6 +5,7 @@ using System.Device.I2c;
 using System.Device.Pwm;
 using System.Device.Pwm.Drivers;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,7 +53,7 @@ namespace Driver
 
         private PwmChannel _pwmMotor;
 
-        //private Bme280 _bme280;
+        private Bme280 _bme280;
         private int _measurementTime;
         private Vl53L0X _vl53L0X;
         private Bh1750fvi _bh1750Fvi;
@@ -100,11 +101,11 @@ namespace Driver
             //Console.WriteLine($"Relative humidity: {humValue.Percent:#.##}%");
             //Console.WriteLine($"Estimated altitude: {altValue.Meters:#} m");
 
-            //_amg88xx = new Amg88xx(I2cDevice.Create(new I2cConnectionSettings(1, Amg88xx.AlternativeI2cAddress)));
+            _amg88xx = new Amg88xx(I2cDevice.Create(new I2cConnectionSettings(1, Amg88xx.AlternativeI2cAddress)));
 
-            _mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu9250.DefaultI2cAddress)));
+            //_mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu9250.DefaultI2cAddress)));
 
-            _mpu9250.MagnetometerMeasurementMode = MeasurementMode.ContinuousMeasurement100Hz;
+            //_mpu9250.MagnetometerMeasurementMode = MeasurementMode.ContinuousMeasurement100Hz;
 
             Thread.Sleep(100);
 
@@ -195,19 +196,19 @@ namespace Driver
                     //ConsoleWriteImage(image);
                     //Console.WriteLine($"Finished Convert Image");
 
-                    var gyro = _mpu9250.GetGyroscopeReading();
-                    Console.WriteLine($"Gyro X = {gyro.X,15}");
-                    Console.WriteLine($"Gyro Y = {gyro.Y,15}");
-                    Console.WriteLine($"Gyro Z = {gyro.Z,15}");
-                    var acc = _mpu9250.GetAccelerometer();
-                    Console.WriteLine($"Acc X = {acc.X,15}");
-                    Console.WriteLine($"Acc Y = {acc.Y,15}");
-                    Console.WriteLine($"Acc Z = {acc.Z,15}");
-                    Console.WriteLine($"Temp = {_mpu9250.GetTemperature().DegreesCelsius.ToString("0.00")} °C");
-                    var magne = _mpu9250.ReadMagnetometer(true);
-                    Console.WriteLine($"Mag X = {magne.X,15}");
-                    Console.WriteLine($"Mag Y = {magne.Y,15}");
-                    Console.WriteLine($"Mag Z = {magne.Z,15}");
+                    //var gyro = _mpu9250.GetGyroscopeReading();
+                    //Console.WriteLine($"Gyro X = {gyro.X,15}");
+                    //Console.WriteLine($"Gyro Y = {gyro.Y,15}");
+                    //Console.WriteLine($"Gyro Z = {gyro.Z,15}");
+                    //var acc = _mpu9250.GetAccelerometer();
+                    //Console.WriteLine($"Acc X = {acc.X,15}");
+                    //Console.WriteLine($"Acc Y = {acc.Y,15}");
+                    //Console.WriteLine($"Acc Z = {acc.Z,15}");
+                    //Console.WriteLine($"Temp = {_mpu9250.GetTemperature().DegreesCelsius.ToString("0.00")} °C");
+                    //var magne = _mpu9250.ReadMagnetometer(true);
+                    //Console.WriteLine($"Mag X = {magne.X,15}");
+                    //Console.WriteLine($"Mag Y = {magne.Y,15}");
+                    //Console.WriteLine($"Mag Z = {magne.Z,15}");
 
 
                     //var mag = _mpu9250.CalibrateMagnetometer();
@@ -239,13 +240,22 @@ namespace Driver
 
         private Bitmap ConvertTemperatureImage(Temperature[,] temperatureImage)
         {
-            var b = new Bitmap(8, 8);
+            var b = new Bitmap(80, 80);
             for (int x = 0; x < 8; x++)
             {
                 for (int y = 0; y < 8; y++)
                 {
                     var t = temperatureImage[x, y];
-                    b.SetPixel(x, y, ConvertTemperatureToColor(t));
+                    var color = ConvertTemperatureToColor(t);
+                    var top = x * 10;
+                    var left = y * 10;
+                    for (int nx = 0; nx < 10; nx++)
+                    {
+                        for (int ny = 0; ny < 10; ny++)
+                        {
+                            b.SetPixel(top + nx, left + ny, color);
+                        }
+                    }
                 }
             }
 
@@ -260,61 +270,6 @@ namespace Driver
             var value = (int)(t * f) % 255;
             return Color.FromArgb(value, value, value);
         }
-
-        static int[] cColors = { 0x000000, 0x000080, 0x008000, 0x008080, 0x800000, 0x800080, 0x808000, 0xC0C0C0, 0x808080, 0x0000FF, 0x00FF00, 0x00FFFF, 0xFF0000, 0xFF00FF, 0xFFFF00, 0xFFFFFF };
-
-        public static void ConsoleWritePixel(Color cValue)
-        {
-            Color[] cTable = cColors.Select(x => Color.FromArgb(x)).ToArray();
-            char[] rList = new char[] { (char)9617, (char)9618, (char)9619, (char)9608 }; // 1/4, 2/4, 3/4, 4/4
-            int[] bestHit = new int[] { 0, 0, 4, int.MaxValue }; //ForeColor, BackColor, Symbol, Score
-
-            for (int rChar = rList.Length; rChar > 0; rChar--)
-            {
-                for (int cFore = 0; cFore < cTable.Length; cFore++)
-                {
-                    for (int cBack = 0; cBack < cTable.Length; cBack++)
-                    {
-                        int R = (cTable[cFore].R * rChar + cTable[cBack].R * (rList.Length - rChar)) / rList.Length;
-                        int G = (cTable[cFore].G * rChar + cTable[cBack].G * (rList.Length - rChar)) / rList.Length;
-                        int B = (cTable[cFore].B * rChar + cTable[cBack].B * (rList.Length - rChar)) / rList.Length;
-                        int iScore = (cValue.R - R) * (cValue.R - R) + (cValue.G - G) * (cValue.G - G) + (cValue.B - B) * (cValue.B - B);
-                        if (!(rChar > 1 && rChar < 4 && iScore > 50000)) // rule out too weird combinations
-                        {
-                            if (iScore < bestHit[3])
-                            {
-                                bestHit[3] = iScore; //Score
-                                bestHit[0] = cFore;  //ForeColor
-                                bestHit[1] = cBack;  //BackColor
-                                bestHit[2] = rChar;  //Symbol
-                            }
-                        }
-                    }
-                }
-            }
-            Console.ForegroundColor = (ConsoleColor)bestHit[0];
-            Console.BackgroundColor = (ConsoleColor)bestHit[1];
-            Console.Write(rList[bestHit[2] - 1]);
-        }
-
-        public static void ConsoleWriteImage(Bitmap source)
-        {
-            int sMax = 39;
-            decimal percent = Math.Min(decimal.Divide(sMax, source.Width), decimal.Divide(sMax, source.Height));
-            Size dSize = new Size((int)(source.Width * percent), (int)(source.Height * percent));
-            Bitmap bmpMax = new Bitmap(source, dSize.Width * 2, dSize.Height);
-            for (int i = 0; i < dSize.Height; i++)
-            {
-                for (int j = 0; j < dSize.Width; j++)
-                {
-                    ConsoleWritePixel(bmpMax.GetPixel(j * 2, i));
-                    ConsoleWritePixel(bmpMax.GetPixel(j * 2 + 1, i));
-                }
-                System.Console.WriteLine();
-            }
-            Console.ResetColor();
-        }
-
 
         private Result<Unit> Drive(DoorDirection direction, double speed)
         {
@@ -367,6 +322,27 @@ namespace Driver
         public Result<bool> IsClosingDoor() => _currentDirection == DoorDirection.Down;
 
         public Result<DoorDirection> GetDirection() => _currentDirection;
+
+        public Result<string> ReadHeatMap()
+        {
+            _amg88xx.ReadImage();
+            var temperatureImage = _amg88xx.TemperatureImage;
+            var bitmap = ConvertTemperatureImage(temperatureImage);
+
+            using (MemoryStream m = new MemoryStream())
+            {
+                bitmap.Save(m, bitmap.RawFormat);
+                byte[] imageBytes = m.ToArray();
+
+                string base64String = Convert.ToBase64String(imageBytes);
+                return "data:image/png;base64," + base64String;
+            }
+        }
+
+        public Result<string> ReadDistance()
+        {
+            return $"{_vl53L0X.Distance} cm";
+        }
     }
 
     public static class Bh1750fviExtenstion

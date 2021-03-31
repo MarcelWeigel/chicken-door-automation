@@ -1,4 +1,5 @@
-﻿using ChickenDoorDriver;
+﻿using System.Drawing;
+using ChickenDoorDriver;
 using FunicularSwitch;
 
 namespace Application.Driver
@@ -12,5 +13,7 @@ namespace Application.Driver
         Result<bool> IsOpeningDoor();
         Result<bool> IsClosingDoor();
         Result<DoorDirection> GetDirection();
+        Result<string> ReadHeatMap();
+        Result<string> ReadDistance();
     }
 }
