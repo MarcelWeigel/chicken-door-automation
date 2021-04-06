@@ -95,14 +95,15 @@ namespace Driver
         public Result<bool> IsClosingDoor() => _currentDirection == DoorDirection.Down;
 
         public Result<DoorDirection> GetDirection() => _currentDirection;
-        public Result<string> ReadHeatMap()
+        public Result<SensorData> ReadSensorData()
         {
-            return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsIAAA7CARUoSoAAAAEVSURBVHhe7duxDQIxEABBQxdUgUho4juigO+ImigDEhfwyWstNJPYoaXVZb7L/fH8DjLXeRIRICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxE7/F7S/P/N2zGu7zds5VnuPCYgJEBMgJkBMgJgAMQFiAsQEiAkQEyBmRyxmAmICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyA2HI7YquxI/bnBIgJEBMgJkBMgJgAMQFiAsQEiAkQsyMWMwExAWICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQGqMHwwcEaU0wlqLAAAAAElFTkSuQmCC";
-        }
-
-        public Result<string> ReadDistance()
-        {
-            return "1 cm";
+            var r = new Random();
+            return new SensorData()
+            {
+                HeatMap = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsIAAA7CARUoSoAAAAEVSURBVHhe7duxDQIxEABBQxdUgUho4juigO+ImigDEhfwyWstNJPYoaXVZb7L/fH8DjLXeRIRICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxE7/F7S/P/N2zGu7zds5VnuPCYgJEBMgJkBMgJgAMQFiAsQEiAkQEyBmRyxmAmICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyA2HI7YquxI/bnBIgJEBMgJkBMgJgAMQFiAsQEiAkQsyMWMwExAWICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQGqMHwwcEaU0wlqLAAAAAElFTkSuQmCC",
+                Distance = r.Next(50, 145),
+                Magnetometer = new double[3] { r.Next(50, 145) , r.Next(50, 145) , r.Next(50, 145) }
+            };
         }
     }
 }

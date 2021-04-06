@@ -7,6 +7,7 @@ using System.Device.Pwm.Drivers;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Driver;
@@ -84,11 +85,10 @@ namespace Driver
 
             _vl53L0X = new Vl53L0X(I2cDevice.Create(new I2cConnectionSettings(1, Vl53L0X.DefaultI2cAddress)));
 
-            //_bme280 = new Bme280(I2cDevice.Create(new I2cConnectionSettings(1, Bme280.SecondaryI2cAddress)));
+            _bme280 = new Bme280(I2cDevice.Create(new I2cConnectionSettings(1, Bme280.SecondaryI2cAddress)));
 
-            //_measurementTime = _bme280.GetMeasurementDuration();
-
-            //_bme280.SetPowerMode(Bmx280PowerMode.Forced);
+            _measurementTime = _bme280.GetMeasurementDuration();
+            _bme280.SetPowerMode(Bmx280PowerMode.Normal);
             //Thread.Sleep(_measurementTime);
 
             //_bme280.TryReadTemperature(out var tempValue);
@@ -103,9 +103,8 @@ namespace Driver
 
             _amg88xx = new Amg88xx(I2cDevice.Create(new I2cConnectionSettings(1, Amg88xx.AlternativeI2cAddress)));
 
-            //_mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu9250.DefaultI2cAddress)));
-
-            //_mpu9250.MagnetometerMeasurementMode = MeasurementMode.ContinuousMeasurement100Hz;
+            _mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu9250.DefaultI2cAddress)));
+            _mpu9250.MagnetometerMeasurementMode = MeasurementMode.ContinuousMeasurement100Hz;
 
             Thread.Sleep(100);
 
@@ -163,59 +162,6 @@ namespace Driver
                             _currentDirection = DoorDirection.Up;
                         }
                     }
-
-                    //try
-                    //{
-                    //    Console.WriteLine($"Distance: '{_vl53L0X.Distance}'");
-                    //}
-                    //catch (Exception e)
-                    //{
-                    //    Console.WriteLine(e);
-                    //}
-
-                    //try
-                    //{
-                    //    Console.WriteLine($"Light: '{_bh1750Fvi.Illuminance}'");
-                    //}
-                    //catch (Exception e)
-                    //{
-                    //    Console.WriteLine(e);
-                    //}
-
-
-                    Thread.Sleep(500);
-
-                    //Console.WriteLine($"Start Read Image");
-                    //_amg88xx.ReadImage();
-                    //Console.WriteLine($"Finished Read Image");
-                    //Console.WriteLine($"Get Image");
-                    //var temperatureImage = _amg88xx.TemperatureImage;
-                    //Console.WriteLine($"Start Convert Image");
-                    ////PrintTemperatureImage(temperatureImage);
-                    //var image = ConvertTemperatureImage(temperatureImage);
-                    //ConsoleWriteImage(image);
-                    //Console.WriteLine($"Finished Convert Image");
-
-                    //var gyro = _mpu9250.GetGyroscopeReading();
-                    //Console.WriteLine($"Gyro X = {gyro.X,15}");
-                    //Console.WriteLine($"Gyro Y = {gyro.Y,15}");
-                    //Console.WriteLine($"Gyro Z = {gyro.Z,15}");
-                    //var acc = _mpu9250.GetAccelerometer();
-                    //Console.WriteLine($"Acc X = {acc.X,15}");
-                    //Console.WriteLine($"Acc Y = {acc.Y,15}");
-                    //Console.WriteLine($"Acc Z = {acc.Z,15}");
-                    //Console.WriteLine($"Temp = {_mpu9250.GetTemperature().DegreesCelsius.ToString("0.00")} °C");
-                    //var magne = _mpu9250.ReadMagnetometer(true);
-                    //Console.WriteLine($"Mag X = {magne.X,15}");
-                    //Console.WriteLine($"Mag Y = {magne.Y,15}");
-                    //Console.WriteLine($"Mag Z = {magne.Z,15}");
-
-
-                    //var mag = _mpu9250.CalibrateMagnetometer();
-                    //Console.WriteLine($"Correction factor bias:");
-                    //Console.WriteLine($"Mag X = {_mpu9250.MagnometerBias.X}");
-                    //Console.WriteLine($"Mag Y = {_mpu9250.MagnometerBias.Y}");
-                    //Console.WriteLine($"Mag Z = {_mpu9250.MagnometerBias.Z}");
                 }
             }, _tokenSource.Token);
         }
@@ -240,22 +186,14 @@ namespace Driver
 
         private Bitmap ConvertTemperatureImage(Temperature[,] temperatureImage)
         {
-            var b = new Bitmap(80, 80);
+            var b = new Bitmap(8, 8);
             for (int x = 0; x < 8; x++)
             {
                 for (int y = 0; y < 8; y++)
                 {
                     var t = temperatureImage[x, y];
                     var color = ConvertTemperatureToColor(t);
-                    var top = x * 10;
-                    var left = y * 10;
-                    for (int nx = 0; nx < 10; nx++)
-                    {
-                        for (int ny = 0; ny < 10; ny++)
-                        {
-                            b.SetPixel(top + nx, left + ny, color);
-                        }
-                    }
+                    b.SetPixel(x, y, color);
                 }
             }
 
@@ -323,25 +261,41 @@ namespace Driver
 
         public Result<DoorDirection> GetDirection() => _currentDirection;
 
-        public Result<string> ReadHeatMap()
+        public Result<SensorData> ReadSensorData()
+        {
+            _bme280.TryReadTemperature(out var tempValue);
+            _bme280.TryReadPressure(out var preValue);
+            _bme280.TryReadHumidity(out var humValue);
+            _bme280.TryReadAltitude(out var altValue);
+            return new SensorData()
+            {
+                HallTop = _controller.Read(Pin.HallTop) == PinValue.Low,
+                HallBottom = _controller.Read(Pin.HallBottom) == PinValue.Low,
+                PhotoelectricBarrier = _controller.Read(Pin.PhotoelectricBarrier) == PinValue.Low,
+                Taster = _controller.Read(Pin.EmergencyTop) == PinValue.High,
+                HeatMap = BitmapConverter.Convert(ReadHeatMap()),
+                Gyroscope = Convert(_mpu9250.GetGyroscopeReading()),
+                Accelerometer = Convert(_mpu9250.GetAccelerometer()),
+                Magnetometer = Convert(_mpu9250.ReadMagnetometer(true)),
+                Distance = _vl53L0X.Distance,
+                Illuminance = _bh1750Fvi.Illuminance.Lux,
+                Temperature = tempValue.DegreesCelsius,
+                Pressure = preValue.Hectopascals,
+                Humidity = humValue.Percent,
+                Altitude = altValue.Centimeters
+            };
+        }
+
+        private double[] Convert(Vector3 v)
+        {
+            return new double[3] {v.X, v.Y, v.Z};
+        }
+
+        private Bitmap ReadHeatMap()
         {
             _amg88xx.ReadImage();
             var temperatureImage = _amg88xx.TemperatureImage;
-            var bitmap = ConvertTemperatureImage(temperatureImage);
-
-            using (MemoryStream m = new MemoryStream())
-            {
-                bitmap.Save(m, bitmap.RawFormat);
-                byte[] imageBytes = m.ToArray();
-
-                string base64String = Convert.ToBase64String(imageBytes);
-                return "data:image/png;base64," + base64String;
-            }
-        }
-
-        public Result<string> ReadDistance()
-        {
-            return $"{_vl53L0X.Distance} cm";
+            return ConvertTemperatureImage(temperatureImage);
         }
     }
 

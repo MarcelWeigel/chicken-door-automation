@@ -1,9 +1,28 @@
 ﻿using System.Drawing;
+using System.Numerics;
 using ChickenDoorDriver;
 using FunicularSwitch;
 
 namespace Application.Driver
 {
+    public class SensorData
+    {
+        public string HeatMap { get; set; }
+        public bool HallTop { get; set; }
+        public bool HallBottom { get; set; }
+        public bool PhotoelectricBarrier { get; set; }
+        public bool Taster { get; set; }
+        public double Distance { get; set; }
+        public double Temperature { get; set; }
+        public double Pressure { get; set; }
+        public double Humidity { get; set; }
+        public double Altitude { get; set; }
+        public double Illuminance { get; set; }
+        public double[] Gyroscope { get; set; }
+        public double[] Accelerometer { get; set; }
+        public double[] Magnetometer { get; set; }
+    }
+
     public interface IDriver
     {
         Result<Unit> Init();
@@ -13,7 +32,6 @@ namespace Application.Driver
         Result<bool> IsOpeningDoor();
         Result<bool> IsClosingDoor();
         Result<DoorDirection> GetDirection();
-        Result<string> ReadHeatMap();
-        Result<string> ReadDistance();
+        Result<SensorData> ReadSensorData();
     }
 }

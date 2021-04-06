@@ -51,14 +51,9 @@ namespace ChickenDoorWebHost.SignalR
             await Clients.All.SendAsync("messageReceived", username, message);
         }
 
-        public async Task ReadHeatMap()
+        public async Task ReadSensorData()
         {
-            await _driver.ReadHeatMap().Match(heatMap => Clients.All.SendAsync("heatMapUpdated", heatMap));
-        }
-
-        public async Task ReadDistance()
-        {
-            await _driver.ReadDistance().Match(heatMap => Clients.All.SendAsync("DistanceUpdated", heatMap));
+            await _driver.ReadSensorData().Match(sensorData => Clients.All.SendAsync("sensorDataUpdated", sensorData));
         }
     }
 }
