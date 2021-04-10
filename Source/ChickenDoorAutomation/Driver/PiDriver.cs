@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Device.Gpio;
 using System.Device.Gpio.Drivers;
 using System.Device.I2c;
@@ -8,6 +9,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Driver;
@@ -81,11 +83,11 @@ namespace Driver
 
             Console.WriteLine($"Init sensor");
 
-            _bh1750Fvi = new Bh1750fvi(I2cDevice.Create(new I2cConnectionSettings(1, Bh1750fviExtenstion.DefaultI2cAddress)));
+            _bh1750Fvi = new Bh1750fvi(I2cDevice.Create(new I2cConnectionSettings(1, Bh1750fviExtenstion.DefaultI2cAddress))); // 23
 
-            _vl53L0X = new Vl53L0X(I2cDevice.Create(new I2cConnectionSettings(1, Vl53L0X.DefaultI2cAddress)));
+            _vl53L0X = new Vl53L0X(I2cDevice.Create(new I2cConnectionSettings(1, Vl53L0X.DefaultI2cAddress))); // 29
 
-            _bme280 = new Bme280(I2cDevice.Create(new I2cConnectionSettings(1, Bme280.SecondaryI2cAddress)));
+            _bme280 = new Bme280(I2cDevice.Create(new I2cConnectionSettings(1, Bme280.SecondaryI2cAddress))); // 76
 
             _measurementTime = _bme280.GetMeasurementDuration();
             _bme280.SetPowerMode(Bmx280PowerMode.Normal);
@@ -101,9 +103,9 @@ namespace Driver
             //Console.WriteLine($"Relative humidity: {humValue.Percent:#.##}%");
             //Console.WriteLine($"Estimated altitude: {altValue.Meters:#} m");
 
-            _amg88xx = new Amg88xx(I2cDevice.Create(new I2cConnectionSettings(1, Amg88xx.AlternativeI2cAddress)));
+            _amg88xx = new Amg88xx(I2cDevice.Create(new I2cConnectionSettings(1, Amg88xx.AlternativeI2cAddress))); // 69
 
-            _mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu9250.DefaultI2cAddress)));
+            _mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu9250.DefaultI2cAddress))); // 68
             _mpu9250.MagnetometerMeasurementMode = MeasurementMode.ContinuousMeasurement100Hz;
 
             Thread.Sleep(100);
@@ -166,47 +168,18 @@ namespace Driver
             }, _tokenSource.Token);
         }
 
-
-        private void PrintTemperatureImage(Temperature[,] temperatureImage)
+        private double[] ConvertTemperatureImage(Temperature[,] temperatureImage)
         {
-            for (int x = 0; x < 8; x++)
-            {
-                Console.Write("[ ");
-                for (int y = 0; y < 8; y++)
-                {
-                    var temperature = temperatureImage[x, y];
-                    var t = temperature.DegreesCelsius;
-                    Console.Write(t.ToString("N1") + ", ");
-                }
-                Console.WriteLine(" ]");
-                Console.WriteLine("");
-            }
-        }
-
-
-        private Bitmap ConvertTemperatureImage(Temperature[,] temperatureImage)
-        {
-            var b = new Bitmap(8, 8);
+            var b = new double[8*8];
             for (int x = 0; x < 8; x++)
             {
                 for (int y = 0; y < 8; y++)
                 {
-                    var t = temperatureImage[x, y];
-                    var color = ConvertTemperatureToColor(t);
-                    b.SetPixel(x, y, color);
+                    b[8 * x + y] = temperatureImage[x, y].DegreesCelsius;
                 }
             }
 
             return b;
-        }
-
-        private double f = 255 / 40;
-
-        private Color ConvertTemperatureToColor(Temperature temperature)
-        {
-            var t = temperature.DegreesCelsius;
-            var value = (int)(t * f) % 255;
-            return Color.FromArgb(value, value, value);
         }
 
         private Result<Unit> Drive(DoorDirection direction, double speed)
@@ -260,20 +233,20 @@ namespace Driver
         public Result<bool> IsClosingDoor() => _currentDirection == DoorDirection.Down;
 
         public Result<DoorDirection> GetDirection() => _currentDirection;
-
+        
         public Result<SensorData> ReadSensorData()
         {
             _bme280.TryReadTemperature(out var tempValue);
             _bme280.TryReadPressure(out var preValue);
             _bme280.TryReadHumidity(out var humValue);
             _bme280.TryReadAltitude(out var altValue);
-            return new SensorData()
+            var data = new SensorData
             {
+                HeatMap = ReadHeatMap(),
                 HallTop = _controller.Read(Pin.HallTop) == PinValue.Low,
                 HallBottom = _controller.Read(Pin.HallBottom) == PinValue.Low,
                 PhotoelectricBarrier = _controller.Read(Pin.PhotoelectricBarrier) == PinValue.Low,
                 Taster = _controller.Read(Pin.EmergencyTop) == PinValue.High,
-                HeatMap = BitmapConverter.Convert(ReadHeatMap()),
                 Gyroscope = Convert(_mpu9250.GetGyroscopeReading()),
                 Accelerometer = Convert(_mpu9250.GetAccelerometer()),
                 Magnetometer = Convert(_mpu9250.ReadMagnetometer(true)),
@@ -284,14 +257,32 @@ namespace Driver
                 Humidity = humValue.Percent,
                 Altitude = altValue.Centimeters
             };
+
+            RecordData(data);
+
+            return data;
+        }
+
+        private readonly List<SensorData> _data = new List<SensorData>();
+        private void RecordData(SensorData data)
+        {
+            _data.Add(data);
+            if (_data.Count == 400)
+            {
+                var dataFile = System.IO.File.Create($"Data_{DateTime.Now.ToString("yyyyMMddHHmm")}.json");
+                var fileWriter = new System.IO.StreamWriter(dataFile);
+                fileWriter.WriteLine(JsonSerializer.Serialize(this._data.ToArray()));
+                fileWriter.Dispose();
+                _data.Clear();
+            }
         }
 
         private double[] Convert(Vector3 v)
         {
-            return new double[3] {v.X, v.Y, v.Z};
+            return new double[] {v.X, v.Y, v.Z};
         }
 
-        private Bitmap ReadHeatMap()
+        private double[] ReadHeatMap()
         {
             _amg88xx.ReadImage();
             var temperatureImage = _amg88xx.TemperatureImage;

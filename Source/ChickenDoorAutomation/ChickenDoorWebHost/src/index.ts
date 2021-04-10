@@ -6,23 +6,25 @@ class Timeline {
     private max: number = undefined;
     private values: number[] = [];
     private unit: string;
+    private notationLength: number;
 
     private canvas: HTMLCanvasElement;
     private context: CanvasRenderingContext2D;
 
-    constructor(container: HTMLElement, unit: string) {
+    constructor(container: HTMLElement, unit: string, notationLength: number) {
         this.unit = unit;
+        this.notationLength = notationLength;
         const canvas = document.createElement('Canvas') as HTMLCanvasElement;
         let context = canvas.getContext("2d");
         context.lineCap = 'round';
         context.lineJoin = 'round';
-        context.strokeStyle = 'black';
+        context.strokeStyle = '#FFFFFF';
         context.lineWidth = 1;
-        this.context = context;
+        this.context = context; 
 
         canvas.width = 500;
-        canvas.height = 100;
-        canvas.style.border = "1px solid black";
+        canvas.height = 130;
+        canvas.style.border = "1px solid #FFFFFF";
         this.canvas = canvas;
 
         container.append(canvas);
@@ -52,7 +54,7 @@ class Timeline {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
 
-
+        this.context.strokeStyle = '#FFFFFF';
         this.context.beginPath();
         this.context.moveTo(0, this.canvas.height);
         this.values.forEach((v, i) => {
@@ -60,15 +62,15 @@ class Timeline {
         });
         this.context.stroke();
 
-        this.context.fillStyle = "back";
+        this.context.fillStyle = "#FFFFFF";
         this.context.font = "bold 12px Arial";
         this.context.textAlign = "left";
 
-        this.context.fillText(`${value} ${this.unit}`, this.values.length + 3, this.getYPos(value, factor));
+        this.context.fillText(`${value.toFixed(this.notationLength)} ${this.unit}`, this.values.length + 3, this.getYPos(value, factor));
 
         this.context.textAlign = "right";
-        this.context.fillText(`${this.max} ${this.unit}`, (this.canvas.width) - 10, 15);
-        this.context.fillText(`${this.min} ${this.unit}`, (this.canvas.width) - 10, (this.canvas.height) - 5);
+        this.context.fillText(`${this.max.toFixed(this.notationLength)} ${this.unit}`, (this.canvas.width) - 10, 15);
+        this.context.fillText(`${this.min.toFixed(this.notationLength)} ${this.unit}`, (this.canvas.width) - 10, (this.canvas.height) - 5);
     }
 
     private getYPos(value: number, factor: number): number {
@@ -130,25 +132,25 @@ class Client {
         this.pHumidity = document.querySelector("#pHumidity");
         this.pAltitude = document.querySelector("#pAltitude");
 
-        this.tHallTop = new Timeline(this.pHallTop, "");
-        this.tHallBottom = new Timeline(this.pHallBottom, "");
-        this.tTaster = new Timeline(this.pTaster, "");
-        this.tPhotoelectricBarrier = new Timeline(this.pPhotoelectricBarrier, "");
-        this.tDistance = new Timeline(this.pDistance, "cm");
-        this.tIlluminance = new Timeline(this.pIlluminance, "lux");
-        this.tGyroscopeX = new Timeline(this.pGyroscope, "X");
-        this.tGyroscopeY = new Timeline(this.pGyroscope, "Y");
-        this.tGyroscopeZ = new Timeline(this.pGyroscope, "Z");
-        this.tAccelerometerX = new Timeline(this.pAccelerometer, "X");
-        this.tAccelerometerY = new Timeline(this.pAccelerometer, "Y");
-        this.tAccelerometerZ = new Timeline(this.pAccelerometer, "Z");
-        this.tMagnetometerX = new Timeline(this.pMagnetometer, "X");
-        this.tMagnetometerY = new Timeline(this.pMagnetometer, "Y");
-        this.tMagnetometerZ = new Timeline(this.pMagnetometer, "Z");
-        this.tTemperature = new Timeline(this.pTemperature, "°C");
-        this.tPressure = new Timeline(this.pPressure, "hPa");
-        this.tHumidity = new Timeline(this.pHumidity, "%");
-        this.tAltitude = new Timeline(this.pAltitude, "cm");
+        this.tHallTop = new Timeline(this.pHallTop, "", 0);
+        this.tHallBottom = new Timeline(this.pHallBottom, "", 0);
+        this.tTaster = new Timeline(this.pTaster, "", 0);
+        this.tPhotoelectricBarrier = new Timeline(this.pPhotoelectricBarrier, "", 0);
+        this.tDistance = new Timeline(this.pDistance, "mm", 0);
+        this.tIlluminance = new Timeline(this.pIlluminance, "lux", 3);
+        this.tGyroscopeX = new Timeline(this.pGyroscope, "X", 3);
+        this.tGyroscopeY = new Timeline(this.pGyroscope, "Y", 3);
+        this.tGyroscopeZ = new Timeline(this.pGyroscope, "Z", 3);
+        this.tAccelerometerX = new Timeline(this.pAccelerometer, "X", 3);
+        this.tAccelerometerY = new Timeline(this.pAccelerometer, "Y", 3);
+        this.tAccelerometerZ = new Timeline(this.pAccelerometer, "Z", 3);
+        this.tMagnetometerX = new Timeline(this.pMagnetometer, "X", 3);
+        this.tMagnetometerY = new Timeline(this.pMagnetometer, "Y", 3);
+        this.tMagnetometerZ = new Timeline(this.pMagnetometer, "Z", 3);
+        this.tTemperature = new Timeline(this.pTemperature, "Â°C", 3);
+        this.tPressure = new Timeline(this.pPressure, "hPa", 3);
+        this.tHumidity = new Timeline(this.pHumidity, "%", 3);
+        this.tAltitude = new Timeline(this.pAltitude, "cm", 3);
 
 
         this.connection = new signalR.HubConnectionBuilder()
@@ -168,26 +170,13 @@ class Client {
     }
 
     private onSensorDataUpdated(sensorData: any): void {
-        this.imgHeatMap.src = sensorData.heatMap;
-        //this.pDistance.innerText = `${sensorData.distance} cm`;
-        //this.pHallTop.innerText = `${sensorData.hallTop}`;
-        //this.pHallBottom.innerText = `${sensorData.hallBottom}`;
-        //this.pTaster.innerText = `${sensorData.taster}`;
-        //this.pPhotoelectricBarrier.innerText = `${sensorData.photoelectricBarrier}`;
-        //this.pIlluminance.innerText = `${sensorData.illuminance} Lux`;
-        //this.pGyroscope.innerText = `${sensorData.gyroscope}`;
-        //this.pAccelerometer.innerText = `${sensorData.accelerometer}`;
-        //this.pMagnetometer.innerText = `${sensorData.magnetometer}`;
-        //this.pTemperature.innerText = `${sensorData.temperature} °C`;
-        //this.pPressure.innerText = `${sensorData.pressure} hPa`;
-        //this.pHumidity.innerText = `${sensorData.humidity} %`; 
-        //this.pAltitude.innerText = `${sensorData.altitude} cm`;
+        this.imgHeatMap.src = sensorData.heatMapBase64Image;
 
         this.tHallTop.update(sensorData.hallTop === true ? 1 : 0); 
-        this.tHallBottom.update(sensorData.hallTop === true ? 1 : 0); 
-        this.tTaster.update(sensorData.hallTop === true ? 1 : 0); 
-        this.tPhotoelectricBarrier.update(sensorData.hallTop === true ? 1 : 0); 
-        this.tDistance.update(sensorData.distance); 
+        this.tHallBottom.update(sensorData.hallBottom === true ? 1 : 0); 
+        this.tTaster.update(sensorData.taster === true ? 1 : 0); 
+        this.tPhotoelectricBarrier.update(sensorData.photoelectricBarrier === true ? 1 : 0); 
+        this.tDistance.update(sensorData.distance);
         this.tIlluminance.update(sensorData.illuminance); 
         this.tGyroscopeX.update(sensorData.gyroscope[0]);
         this.tGyroscopeY.update(sensorData.gyroscope[1]);

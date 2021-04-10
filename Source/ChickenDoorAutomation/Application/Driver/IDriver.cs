@@ -1,13 +1,11 @@
-﻿using System.Drawing;
-using System.Numerics;
-using ChickenDoorDriver;
+﻿using ChickenDoorDriver;
 using FunicularSwitch;
 
 namespace Application.Driver
 {
     public class SensorData
     {
-        public string HeatMap { get; set; }
+        public double[] HeatMap { get; set; }
         public bool HallTop { get; set; }
         public bool HallBottom { get; set; }
         public bool PhotoelectricBarrier { get; set; }

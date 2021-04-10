@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Drawing;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Driver;
@@ -19,9 +21,15 @@ namespace Driver
         private int _driveCounter = 0;
         private bool _isRunning = false;
 
+        private SensorData[] _sensorData;
+        private int _currentIndex = 0;
+
         public Result<Unit> Init()
         {
             Run();
+
+            var data = System.IO.File.ReadAllText("Data_202104102216.json");
+            _sensorData = JsonSerializer.Deserialize<SensorData[]>(data);
 
             return Unit.Instance;
         }
@@ -72,7 +80,7 @@ namespace Driver
                 case DoorDirection.Down:
                     _driveCounter = 1000;
                     break;
-                default: 
+                default:
                     return Result.Error<Unit>($"{nameof(direction)} type has no member '${direction}'.");
             }
             return Unit.Instance;
@@ -97,13 +105,8 @@ namespace Driver
         public Result<DoorDirection> GetDirection() => _currentDirection;
         public Result<SensorData> ReadSensorData()
         {
-            var r = new Random();
-            return new SensorData()
-            {
-                HeatMap = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsIAAA7CARUoSoAAAAEVSURBVHhe7duxDQIxEABBQxdUgUho4juigO+ImigDEhfwyWstNJPYoaXVZb7L/fH8DjLXeRIRICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyAmAAxAWICxE7/F7S/P/N2zGu7zds5VnuPCYgJEBMgJkBMgJgAMQFiAsQEiAkQEyBmRyxmAmICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQEyA2HI7YquxI/bnBIgJEBMgJkBMgJgAMQFiAsQEiAkQsyMWMwExAWICxASICRATICZATICYADEBYgLEBIgJEBMgJkBMgJgAMQFiAsQEiAkQEyAmQGqMHwwcEaU0wlqLAAAAAElFTkSuQmCC",
-                Distance = r.Next(50, 145),
-                Magnetometer = new double[3] { r.Next(50, 145) , r.Next(50, 145) , r.Next(50, 145) }
-            };
+            _currentIndex = (_currentIndex + 1) % _sensorData.Length;
+            return _sensorData[_currentIndex];
         }
     }
 }

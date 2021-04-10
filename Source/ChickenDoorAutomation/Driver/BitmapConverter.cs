@@ -9,7 +9,8 @@ namespace Driver
         {
             using MemoryStream m = new MemoryStream();
 
-            bitmap.Save(m, bitmap.RawFormat);
+            //bitmap.Save(m, bitmap.RawFormat);
+            bitmap.Save(m, System.Drawing.Imaging.ImageFormat.Png);
             byte[] imageBytes = m.ToArray();
 
             string base64String = System.Convert.ToBase64String(imageBytes);
