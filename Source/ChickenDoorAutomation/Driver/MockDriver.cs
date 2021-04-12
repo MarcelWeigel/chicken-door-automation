@@ -53,6 +53,7 @@ namespace Driver
                     {
                         if (_driveCounter <= 0)
                         {
+                            Console.WriteLine($"Finished driving.");
                             _driveCounter = 0;
                             _currentDirection = DoorDirection.None;
                         }
@@ -68,6 +69,8 @@ namespace Driver
 
         private Result<Unit> Drive(DoorDirection direction, int speed)
         {
+            Console.WriteLine($"Drive in direction: '{direction}'.");
+
             _currentDirection = direction;
             _currentSpeed = speed;
             switch (direction)
@@ -107,6 +110,21 @@ namespace Driver
         {
             _currentIndex = (_currentIndex + 1) % _sensorData.Length;
             return _sensorData[_currentIndex];
+        }
+
+        public Result<DoorInfo> GetDoorInfo()
+        {
+            return new DoorInfo
+            {
+                DoorState = DoorState.Init,
+                DoorDirection = _currentDirection,
+                Position = 20
+            };
+        }
+
+        public void Dispose()
+        {
+            Console.WriteLine("Clean up sensors");
         }
     }
 }

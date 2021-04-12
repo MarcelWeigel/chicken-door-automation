@@ -70,6 +70,11 @@ var Client = /** @class */ (function () {
     }
     Client.prototype.init = function () {
         var _this = this;
+        this.doorStateElement = document.querySelector("#doorStatus");
+        this.doorDirectionElement = document.querySelector("#doorDirection");
+        this.positionElement = document.querySelector("#position");
+        this.closeDoorButton = document.querySelector("#closeDoor");
+        this.openDoorButton = document.querySelector("#openDoor");
         this.imgHeatMap = document.querySelector("#imgHeatMap");
         this.pDistance = document.querySelector("#pDistance");
         this.pHallTop = document.querySelector("#pHallTop");
@@ -107,11 +112,19 @@ var Client = /** @class */ (function () {
             .withUrl("/hub")
             .build();
         this.connection.on("sensorDataUpdated", function (sensorData) { return _this.onSensorDataUpdated(sensorData); });
+        this.connection.on("doorInfoUpdated", function (doorInfo) { return _this.onDoorInfoUpdated(doorInfo); });
         this.connection.start().catch(function (err) { return document.write(err); });
         setInterval(function () { return _this.readSensorData(); }, 500);
+        setInterval(function () { return _this.readDoorInfo(); }, 500);
+        this.closeDoorButton.addEventListener("click", function () { return _this.connection.send("closeDoor").then(function () { }); });
+        this.openDoorButton.addEventListener("click", function () { return _this.connection.send("openDoor").then(function () { }); });
     };
     Client.prototype.readSensorData = function () {
         this.connection.send("readSensorData")
+            .then(function () { });
+    };
+    Client.prototype.readDoorInfo = function () {
+        this.connection.send("readDoorInfo")
             .then(function () { });
     };
     Client.prototype.onSensorDataUpdated = function (sensorData) {
@@ -121,20 +134,31 @@ var Client = /** @class */ (function () {
         this.tTaster.update(sensorData.taster === true ? 1 : 0);
         this.tPhotoelectricBarrier.update(sensorData.photoelectricBarrier === true ? 1 : 0);
         this.tDistance.update(sensorData.distance);
-        this.tIlluminance.update(sensorData.illuminance);
+        this.tIlluminance.update(this.convertToLog(sensorData.illuminance));
         this.tGyroscopeX.update(sensorData.gyroscope[0]);
         this.tGyroscopeY.update(sensorData.gyroscope[1]);
         this.tGyroscopeZ.update(sensorData.gyroscope[2]);
         this.tAccelerometerX.update(sensorData.accelerometer[0]);
         this.tAccelerometerY.update(sensorData.accelerometer[1]);
         this.tAccelerometerZ.update(sensorData.accelerometer[2]);
-        this.tMagnetometerX.update(sensorData.magnetometer[0]);
-        this.tMagnetometerY.update(sensorData.magnetometer[1]);
-        this.tMagnetometerZ.update(sensorData.magnetometer[2]);
+        this.tMagnetometerX.update(this.convertToLog(sensorData.magnetometer[0]));
+        this.tMagnetometerY.update(this.convertToLog(sensorData.magnetometer[1]));
+        this.tMagnetometerZ.update(this.convertToLog(sensorData.magnetometer[2]));
         this.tTemperature.update(sensorData.temperature);
         this.tPressure.update(sensorData.pressure);
         this.tHumidity.update(sensorData.humidity);
         this.tAltitude.update(sensorData.altitude);
+    };
+    Client.prototype.onDoorInfoUpdated = function (doorInfo) {
+        this.doorStateElement.innerText = doorInfo.doorState;
+        this.doorDirectionElement.innerText = doorInfo.doorDirection;
+        this.positionElement.innerText = doorInfo.position;
+    };
+    Client.prototype.convertToLog = function (value) {
+        if (!value) {
+            return 0;
+        }
+        return Math.log(Math.abs(value));
     };
     return Client;
 }());

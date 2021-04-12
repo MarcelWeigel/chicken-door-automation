@@ -30,7 +30,7 @@ class Timeline {
         container.append(canvas);
     }
 
-    update(value: number): void {
+    public update(value: number): void {
         if (this.values.length >= this.canvas.width - 100) {
             this.values = [];
             this.min = undefined;
@@ -79,6 +79,13 @@ class Timeline {
 }
 
 class Client {
+    private doorStateElement: HTMLElement;
+    private doorDirectionElement: HTMLElement;
+    private positionElement: HTMLElement;
+
+    private closeDoorButton: HTMLElement;
+    private openDoorButton: HTMLElement;
+
     private imgHeatMap: HTMLImageElement;
     private pDistance: HTMLElement;
     private pHallTop: HTMLElement;
@@ -117,6 +124,13 @@ class Client {
     private tAltitude: Timeline;
 
     public init(): void {
+        this.doorStateElement = document.querySelector("#doorStatus");
+        this.doorDirectionElement = document.querySelector("#doorDirection");
+        this.positionElement = document.querySelector("#position");
+
+        this.closeDoorButton = document.querySelector("#closeDoor");
+        this.openDoorButton = document.querySelector("#openDoor");
+
         this.imgHeatMap = document.querySelector("#imgHeatMap");
         this.pDistance = document.querySelector("#pDistance");
         this.pHallTop = document.querySelector("#pHallTop");
@@ -158,15 +172,25 @@ class Client {
             .build();
 
         this.connection.on("sensorDataUpdated", (sensorData: any) => this.onSensorDataUpdated(sensorData));
+        this.connection.on("doorInfoUpdated", (doorInfo: any) => this.onDoorInfoUpdated(doorInfo));
 
         this.connection.start().catch(err => document.write(err));
 
         setInterval(() => this.readSensorData(), 500);
+        setInterval(() => this.readDoorInfo(), 500); 
+
+        this.closeDoorButton.addEventListener("click", () => this.connection.send("closeDoor").then(() => { }));
+        this.openDoorButton.addEventListener("click", () => this.connection.send("openDoor").then(() => { }));
     }
 
     private readSensorData(): void {
         this.connection.send("readSensorData")
             .then(() => {});
+    }
+
+    private readDoorInfo(): void {
+        this.connection.send("readDoorInfo")
+            .then(() => { });
     }
 
     private onSensorDataUpdated(sensorData: any): void {
@@ -177,20 +201,33 @@ class Client {
         this.tTaster.update(sensorData.taster === true ? 1 : 0); 
         this.tPhotoelectricBarrier.update(sensorData.photoelectricBarrier === true ? 1 : 0); 
         this.tDistance.update(sensorData.distance);
-        this.tIlluminance.update(sensorData.illuminance); 
+        this.tIlluminance.update(this.convertToLog(sensorData.illuminance)); 
         this.tGyroscopeX.update(sensorData.gyroscope[0]);
         this.tGyroscopeY.update(sensorData.gyroscope[1]);
         this.tGyroscopeZ.update(sensorData.gyroscope[2]); 
         this.tAccelerometerX.update(sensorData.accelerometer[0]);
         this.tAccelerometerY.update(sensorData.accelerometer[1]);
         this.tAccelerometerZ.update(sensorData.accelerometer[2]); 
-        this.tMagnetometerX.update(sensorData.magnetometer[0]); 
-        this.tMagnetometerY.update(sensorData.magnetometer[1]); 
-        this.tMagnetometerZ.update(sensorData.magnetometer[2]); 
+        this.tMagnetometerX.update(this.convertToLog(sensorData.magnetometer[0]));
+        this.tMagnetometerY.update(this.convertToLog(sensorData.magnetometer[1])); 
+        this.tMagnetometerZ.update(this.convertToLog(sensorData.magnetometer[2])); 
         this.tTemperature.update(sensorData.temperature); 
         this.tPressure.update(sensorData.pressure); 
         this.tHumidity.update(sensorData.humidity); 
         this.tAltitude.update(sensorData.altitude); 
+    }
+
+    private onDoorInfoUpdated(doorInfo: any): void {
+        this.doorStateElement.innerText = doorInfo.doorState;
+        this.doorDirectionElement.innerText = doorInfo.doorDirection;
+        this.positionElement.innerText = doorInfo.position;
+    }
+
+    private convertToLog(value: number): number {
+        if (!value) {
+            return 0;
+        }
+        return Math.log(Math.abs(value));
     }
 }
 

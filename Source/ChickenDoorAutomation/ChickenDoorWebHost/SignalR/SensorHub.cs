@@ -24,6 +24,13 @@ namespace ChickenDoorWebHost.SignalR
         public double[] Magnetometer { get; set; }
     }
 
+    public class DoorInfoClient
+    {
+        public string DoorState { get; set; }
+        public string DoorDirection { get; set; }
+        public double Position { get; set; }
+    }
+
     public class SensorHub : Hub
     {
         private readonly IDriver _driver;
@@ -33,34 +40,7 @@ namespace ChickenDoorWebHost.SignalR
         public SensorHub(IDriver driver)
         {
             _driver = driver;
-
-            
-
-            //Run();
         }
-
-        //private void Run()
-        //{
-        //    _tokenSource = new CancellationTokenSource();
-        //    CancellationToken ct = _tokenSource.Token;
-
-        //    var task = Task.Run(() =>
-        //    {
-        //        _isRunning = true;
-
-        //        while (_isRunning)
-        //        {
-        //            if (ct.IsCancellationRequested)
-        //            {
-        //                _isRunning = false;
-        //            }
-                    
-        //            Thread.Sleep(500);
-
-        //            _driver.ReadHeatMap().Match(heatMap => Clients.All.SendAsync("heatMapReceived", heatMap));
-        //        }
-        //    }, _tokenSource.Token);
-        //}
 
         public async Task NewMessage(long username, string message)
         {
@@ -70,6 +50,21 @@ namespace ChickenDoorWebHost.SignalR
         public async Task ReadSensorData()
         {
             await _driver.ReadSensorData().Match(sensorData => Clients.All.SendAsync("sensorDataUpdated", Convert(sensorData)));
+        }
+
+        public void OpenDoor()
+        {
+            _driver.OpenDoor();
+        }
+
+        public void CloseDoor()
+        {
+            _driver.CloseDoor();
+        }
+
+        public async Task ReadDoorInfo()
+        {
+            await _driver.GetDoorInfo().Match(doorInfo => Clients.All.SendAsync("doorInfoUpdated", Convert(doorInfo)));
         }
 
         private SensorDataClient Convert(SensorData data)
@@ -90,6 +85,16 @@ namespace ChickenDoorWebHost.SignalR
                 Pressure = data.Pressure,
                 Humidity = data.Humidity,
                 Altitude = data.Altitude
+            };
+        }
+
+        private DoorInfoClient Convert(DoorInfo doorInfo)
+        {
+            return new DoorInfoClient
+            {
+                DoorState = doorInfo.DoorState.ToString(),
+                DoorDirection = doorInfo.DoorDirection.ToString(),
+                Position = doorInfo.Position
             };
         }
     }

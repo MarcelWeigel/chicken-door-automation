@@ -1,10 +1,10 @@
+using System;
 using System.Buffers;
 using System.Reflection;
 using Application.Command;
 using Application.Driver;
 using Application.Query;
 using Bluehands.Hypermedia.MediaTypes;
-using ChickenDoorDriver;
 using ChickenDoorWebHost.GlobalExceptionHandler;
 using ChickenDoorWebHost.Problems;
 using ChickenDoorWebHost.SignalR;
@@ -64,7 +64,7 @@ namespace ChickenDoorWebHost
             services.AddTransient<GetDoorDirectionQuery>();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver, IHostApplicationLifetime hostApplicationLifetime)
         {
             if (env.IsDevelopment())
             {
@@ -102,6 +102,12 @@ namespace ChickenDoorWebHost
             });
 
             driver.Init();
+
+            hostApplicationLifetime.ApplicationStopping.Register(OnShutdown);
+        }
+
+        private void OnShutdown()
+        {
         }
     }
 }

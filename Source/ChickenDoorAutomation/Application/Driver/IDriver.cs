@@ -1,4 +1,6 @@
-﻿using ChickenDoorDriver;
+﻿using System;
+using System.Threading.Tasks;
+using ChickenDoorDriver;
 using FunicularSwitch;
 
 namespace Application.Driver
@@ -21,7 +23,7 @@ namespace Application.Driver
         public double[] Magnetometer { get; set; }
     }
 
-    public interface IDriver
+    public interface IDriver : IDisposable
     {
         Result<Unit> Init();
         Result<Unit> EmergencyStop();
@@ -31,5 +33,6 @@ namespace Application.Driver
         Result<bool> IsClosingDoor();
         Result<DoorDirection> GetDirection();
         Result<SensorData> ReadSensorData();
+        Result<DoorInfo> GetDoorInfo();
     }
 }

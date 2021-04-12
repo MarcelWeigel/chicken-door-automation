@@ -20,6 +20,7 @@ using Iot.Device.Bh1750fvi;
 using Iot.Device.Bmxx80;
 using Iot.Device.Bmxx80.PowerMode;
 using Iot.Device.Imu;
+using Iot.Device.Magnetometer;
 using Iot.Device.Vl53L0X;
 using UnitsNet;
 using MeasurementMode = Iot.Device.Magnetometer.MeasurementMode;
@@ -38,14 +39,20 @@ namespace Driver
             public const int MotorLeft = 24;
             public const int MotorRight = 23;
             public const int MotorEnable = 12;
-            public const int HallBottom = 17;
-            public const int HallTop = 27;
+            public const int HallBottom = 27;
+            public const int HallTop = 17;
             public const int PhotoelectricBarrier = 22;
             public const int EmergencyTop = 10;
+            public const int DC12_1 = 14;
+            public const int DC12_2 = 15;
         }
 
         private double _currentSpeed = 1;
         private DoorDirection _currentDirection = DoorDirection.None;
+        private DoorState _currentDoorState = DoorState.Init;
+        private double _upperDistance = 0;
+        private double _lowerDistance = 0;
+        private double _distanceFactor = 0;
         private const double UpSpeed = 0.5; //0.70;
         private const double DownSpeed = 0.1; //0.35;
 
@@ -72,13 +79,19 @@ namespace Driver
             _controller.OpenPin(Pin.MotorEnable, PinMode.Output);
             _controller.OpenPin(Pin.MotorLeft, PinMode.Output);
             _controller.OpenPin(Pin.MotorRight, PinMode.Output);
-            _controller.OpenPin(Pin.EmergencyTop, PinMode.InputPullDown);
+            _controller.OpenPin(Pin.EmergencyTop, PinMode.InputPullUp);
+            _controller.OpenPin(Pin.DC12_1, PinMode.Output);
+            _controller.OpenPin(Pin.DC12_2, PinMode.Output);
 
-            _pwmMotor = new SoftwarePwmChannel(Pin.MotorEnable, 200, 0.1);
-            _pwmMotor.Start();
+            //_pwmMotor = new SoftwarePwmChannel(Pin.MotorEnable, 200, 0.1);
+            //_pwmMotor.Start();
+
+            _controller.Write(Pin.MotorEnable, PinValue.High);
 
             _controller.Write(Pin.MotorLeft, PinValue.Low);
             _controller.Write(Pin.MotorRight, PinValue.Low);
+            _controller.Write(Pin.DC12_1, PinValue.Low);
+            _controller.Write(Pin.DC12_2, PinValue.Low);
 
 
             Console.WriteLine($"Init sensor");
@@ -87,7 +100,7 @@ namespace Driver
 
             _vl53L0X = new Vl53L0X(I2cDevice.Create(new I2cConnectionSettings(1, Vl53L0X.DefaultI2cAddress))); // 29
 
-            _bme280 = new Bme280(I2cDevice.Create(new I2cConnectionSettings(1, Bme280.SecondaryI2cAddress))); // 76
+            _bme280 = new Bme280(I2cDevice.Create(new I2cConnectionSettings(1, Bmx280Base.SecondaryI2cAddress))); // 76
 
             _measurementTime = _bme280.GetMeasurementDuration();
             _bme280.SetPowerMode(Bmx280PowerMode.Normal);
@@ -105,7 +118,16 @@ namespace Driver
 
             _amg88xx = new Amg88xx(I2cDevice.Create(new I2cConnectionSettings(1, Amg88xx.AlternativeI2cAddress))); // 69
 
-            _mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu9250.DefaultI2cAddress))); // 68
+            try
+            {
+                _mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu6500.DefaultI2cAddress))); // 68
+            }
+            catch (IOException e)
+            {
+                Console.WriteLine("AK8963 is exposed, try to connect directly.");
+                _mpu9250 = new Mpu9250(I2cDevice.Create(new I2cConnectionSettings(1, Mpu6500.DefaultI2cAddress)), i2CDeviceAk8963: I2cDevice.Create(new I2cConnectionSettings(1, Ak8963.DefaultI2cAddress)));
+            }
+
             _mpu9250.MagnetometerMeasurementMode = MeasurementMode.ContinuousMeasurement100Hz;
 
             Thread.Sleep(100);
@@ -115,7 +137,40 @@ namespace Driver
 
             Run();
 
+            Thread.Sleep(100);
+
+            Calibrate();
+
             return Unit.Instance;
+        }
+
+        private void Calibrate()
+        {
+            OpenDoor();
+            while (_currentDoorState != DoorState.Open)
+            {
+                Thread.Sleep(100);
+            }
+
+            _upperDistance = _vl53L0X.Distance;
+
+            CloseDoor();
+            while (_currentDoorState != DoorState.Closed)
+            {
+                Thread.Sleep(100);
+            }
+
+            _lowerDistance = _vl53L0X.Distance;
+            var distanceDifference = _lowerDistance - _upperDistance;
+            _distanceFactor = 100 / distanceDifference;
+
+            OpenDoor();
+            while (_currentDoorState != DoorState.Open)
+            {
+                Thread.Sleep(100);
+            }
+
+            _currentDoorState = DoorState.Open;
         }
 
         private void Run()
@@ -137,40 +192,52 @@ namespace Driver
                         _pwmMotor.Stop();
                         _isRunning = false;
                     }
-                    if (_controller.Read(Pin.HallTop) == PinValue.Low)
+                    if (_controller.Read(Pin.HallTop) == PinValue.Low && _currentDirection == DoorDirection.Up)
                     {
-                        _controller.Write(Pin.MotorLeft, PinValue.Low);
-                        _currentDirection = DoorDirection.None;
-                    }
-                    if (_controller.Read(Pin.HallBottom) == PinValue.Low)
-                    {
-                        _controller.Write(Pin.MotorRight, PinValue.Low);
-                        _currentDirection = DoorDirection.None;
-                    }
-
-                    if (_controller.Read(Pin.EmergencyTop) == PinValue.High)
-                    {
+                        Console.WriteLine("Reached top stopping");
                         _controller.Write(Pin.MotorLeft, PinValue.Low);
                         _controller.Write(Pin.MotorRight, PinValue.Low);
+                        _controller.Write(Pin.DC12_1, PinValue.Low);
+                        _controller.Write(Pin.DC12_2, PinValue.Low);
                         _currentDirection = DoorDirection.None;
+                        _currentDoorState = DoorState.Open;
+                    }
+                    if (_controller.Read(Pin.HallBottom) == PinValue.Low && _currentDirection == DoorDirection.Down)
+                    {
+                        Console.WriteLine("Reached bottom stopping");
+                        _controller.Write(Pin.MotorLeft, PinValue.Low);
+                        _controller.Write(Pin.MotorRight, PinValue.Low);
+                        _currentDirection = DoorDirection.None;
+                        _controller.Write(Pin.DC12_1, PinValue.Low);
+                        _controller.Write(Pin.DC12_2, PinValue.Low);
+                        _currentDoorState = DoorState.Closed;
                     }
 
-                    if (_controller.Read(Pin.PhotoelectricBarrier) == PinValue.Low)
+                    //if (_controller.Read(Pin.EmergencyTop) == PinValue.High)
+                    //{
+                    //    Console.WriteLine("Reached emergency stopping");
+                    //    _controller.Write(Pin.MotorLeft, PinValue.Low);
+                    //    _controller.Write(Pin.MotorRight, PinValue.Low);
+                    //    _currentDirection = DoorDirection.None;
+                    //    _currentDoorState = DoorState.Error;
+                    //}
+
+                    if (_controller.Read(Pin.PhotoelectricBarrier) == PinValue.Low && _currentDirection == DoorDirection.Down)
                     {
-                        if (_currentDirection == DoorDirection.Down)
-                        {
-                            _controller.Write(Pin.MotorRight, PinValue.Low);
-                            _controller.Write(Pin.MotorLeft, PinValue.High);
-                            _currentDirection = DoorDirection.Up;
-                        }
+                        Console.WriteLine("Direction was down");
+                        _controller.Write(Pin.MotorRight, PinValue.Low);
+                        _controller.Write(Pin.MotorLeft, PinValue.High);
+                        _currentDirection = DoorDirection.Up;
+                        _currentDoorState = DoorState.Opening;
                     }
+                    Thread.Sleep(100);
                 }
             }, _tokenSource.Token);
         }
 
         private double[] ConvertTemperatureImage(Temperature[,] temperatureImage)
         {
-            var b = new double[8*8];
+            var b = new double[8 * 8];
             for (int x = 0; x < 8; x++)
             {
                 for (int y = 0; y < 8; y++)
@@ -189,6 +256,8 @@ namespace Driver
                 return Result.Error<Unit>("Controller was not initialized.");
             }
 
+            Console.WriteLine($"Drive in direction: '{direction}'.");
+
             _controller.Write(Pin.MotorLeft, PinValue.Low);
             _controller.Write(Pin.MotorRight, PinValue.Low);
             _currentDirection = direction;
@@ -199,11 +268,18 @@ namespace Driver
                     break;
                 case DoorDirection.Up:
                     _controller.Write(Pin.MotorLeft, PinValue.High);
+                    _controller.Write(Pin.DC12_1, PinValue.High);
+                    _controller.Write(Pin.DC12_2, PinValue.High);
+                    _currentDoorState = DoorState.Opening;
                     break;
                 case DoorDirection.Down:
                     _controller.Write(Pin.MotorRight, PinValue.High);
+                    _controller.Write(Pin.DC12_1, PinValue.High);
+                    _controller.Write(Pin.DC12_2, PinValue.High);
+                    _currentDoorState = DoorState.Closing;
                     break;
                 default:
+                    _currentDoorState = DoorState.Error;
                     return Result.Error<Unit>($"{nameof(direction)} type has no member '${direction}'.");
             }
             return Unit.Instance;
@@ -233,7 +309,7 @@ namespace Driver
         public Result<bool> IsClosingDoor() => _currentDirection == DoorDirection.Down;
 
         public Result<DoorDirection> GetDirection() => _currentDirection;
-        
+
         public Result<SensorData> ReadSensorData()
         {
             _bme280.TryReadTemperature(out var tempValue);
@@ -260,7 +336,25 @@ namespace Driver
 
             RecordData(data);
 
+            Console.WriteLine("Read sensor data finished");
+
             return data;
+        }
+
+        public Result<DoorInfo> GetDoorInfo()
+        {
+            return new DoorInfo
+            {
+                DoorState = _currentDoorState,
+                DoorDirection = _currentDirection,
+                Position = CalculateCurrentPosition()
+            };
+        }
+
+        private double CalculateCurrentPosition()
+        {
+            var currentDistance = _vl53L0X.Distance;
+            return (currentDistance - _upperDistance) * _distanceFactor;
         }
 
         private readonly List<SensorData> _data = new List<SensorData>();
@@ -269,9 +363,9 @@ namespace Driver
             _data.Add(data);
             if (_data.Count == 400)
             {
-                var dataFile = System.IO.File.Create($"Data_{DateTime.Now.ToString("yyyyMMddHHmm")}.json");
-                var fileWriter = new System.IO.StreamWriter(dataFile);
-                fileWriter.WriteLine(JsonSerializer.Serialize(this._data.ToArray()));
+                var dataFile = File.Create($"Data_{DateTime.Now.ToString("yyyyMMddHHmm")}.json");
+                var fileWriter = new StreamWriter(dataFile);
+                fileWriter.WriteLine(JsonSerializer.Serialize(_data.ToArray()));
                 fileWriter.Dispose();
                 _data.Clear();
             }
@@ -279,7 +373,7 @@ namespace Driver
 
         private double[] Convert(Vector3 v)
         {
-            return new double[] {v.X, v.Y, v.Z};
+            return new double[] { v.X, v.Y, v.Z };
         }
 
         private double[] ReadHeatMap()
@@ -287,6 +381,16 @@ namespace Driver
             _amg88xx.ReadImage();
             var temperatureImage = _amg88xx.TemperatureImage;
             return ConvertTemperatureImage(temperatureImage);
+        }
+
+        public void Dispose()
+        {
+            Console.WriteLine("Clean up sensors");
+            _mpu9250.Dispose();
+            _bme280.Dispose();
+            _vl53L0X.Dispose();
+            _bh1750Fvi.Dispose();
+            _amg88xx.Dispose();
         }
     }
 
