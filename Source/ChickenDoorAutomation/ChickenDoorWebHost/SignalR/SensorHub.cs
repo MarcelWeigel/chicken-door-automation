@@ -1,14 +1,17 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Reactive.Concurrency;
 using System.Threading.Tasks;
 using Application.Driver;
 using Driver;
 using Microsoft.AspNetCore.SignalR;
+using Console = System.Console;
 
 namespace ChickenDoorWebHost.SignalR
 {
     public class SensorDataClient
     {
-        public string HeatMapBase64Image { get; set; }
+        public string? HeatMapBase64Image { get; set; }
         public bool HallTop { get; set; }
         public bool HallBottom { get; set; }
         public bool PhotoelectricBarrier { get; set; }
@@ -19,27 +22,31 @@ namespace ChickenDoorWebHost.SignalR
         public double Humidity { get; set; }
         public double Altitude { get; set; }
         public double Illuminance { get; set; }
-        public double[] Gyroscope { get; set; }
-        public double[] Accelerometer { get; set; }
-        public double[] Magnetometer { get; set; }
+        public double[]? Gyroscope { get; set; }
+        public double[]? Accelerometer { get; set; }
+        public double[]? Magnetometer { get; set; }
     }
 
     public class DoorInfoClient
     {
-        public string DoorState { get; set; }
-        public string DoorDirection { get; set; }
+        public string? DoorState { get; set; }
+        public string? DoorDirection { get; set; }
         public double Position { get; set; }
     }
 
     public class SensorHub : Hub
     {
         private readonly IDriver _driver;
-        private bool _isRunning;
-        private CancellationTokenSource _tokenSource;
+        private readonly IHubContext<SensorHub> _hubContext;
+        private readonly DataPublisher _dataPublisher;
+        private readonly ClientTracking _clientTracking;
 
-        public SensorHub(IDriver driver)
+        public SensorHub(IDriver driver, IHubContext<SensorHub> hubContext, DataPublisher dataPublisher, ClientTracking clientTracking)
         {
             _driver = driver;
+            _hubContext = hubContext;
+            _dataPublisher = dataPublisher;
+            _clientTracking = clientTracking;
         }
 
         public async Task NewMessage(long username, string message)
@@ -49,7 +56,25 @@ namespace ChickenDoorWebHost.SignalR
 
         public async Task ReadSensorData()
         {
-            await _driver.ReadSensorData().Match(sensorData => Clients.All.SendAsync("sensorDataUpdated", Convert(sensorData)));
+            await _driver.ReadSensorData().Match(sensorData => _hubContext.Clients.All
+                .SendAsync("sensorDataUpdated", Convert(sensorData)));
+        }
+
+        public async Task ReadVideoCapture()
+        {
+            await _driver.ReadVideoCapture().Match(videoCapture => _hubContext.Clients.All
+                .SendAsync("videoCaptureUpdated", videoCapture));
+        }
+        public async Task ReadDoorInfo()
+        {
+            await _driver.GetDoorInfo().Match(doorInfo => _hubContext.Clients.All
+                .SendAsync("doorInfoUpdated", Convert(doorInfo)));
+        }
+
+        public async Task PublishData()
+        {
+            await ReadVideoCapture();
+            await ReadDoorInfo();
         }
 
         public void OpenDoor()
@@ -62,10 +87,21 @@ namespace ChickenDoorWebHost.SignalR
             _driver.CloseDoor();
         }
 
-        public async Task ReadDoorInfo()
+        public void StopMotor()
         {
-            await _driver.GetDoorInfo().Match(doorInfo => Clients.All.SendAsync("doorInfoUpdated", Convert(doorInfo)));
+            _driver.EmergencyStop();
         }
+
+        public void TurnLightOn()
+        {
+            _driver.EmergencyStop();
+        }
+
+        public void TurnLightOff()
+        {
+            _driver.EmergencyStop();
+        }
+
 
         private SensorDataClient Convert(SensorData data)
         {
@@ -96,6 +132,89 @@ namespace ChickenDoorWebHost.SignalR
                 DoorDirection = doorInfo.DoorDirection.ToString(),
                 Position = doorInfo.Position
             };
+        }
+
+        public override Task OnConnectedAsync()
+        {
+            if (_clientTracking.NumberOfConnectedClients == 0)
+            {
+                _dataPublisher.Start(PublishData);
+            }
+            _clientTracking.OnClientConnected(Context.ConnectionId);
+
+            return Task.CompletedTask;
+        }
+
+        public override Task OnDisconnectedAsync(Exception e)
+        {
+            _clientTracking.OnClientDisconnected(Context.ConnectionId);
+
+            if (_clientTracking.NumberOfConnectedClients == 0)
+            {
+                _dataPublisher.Stop();
+            }
+            return Task.CompletedTask;
+        }
+    }
+
+    public class ClientTracking
+    {
+        readonly object _lock = new object();
+        HashSet<string> ConnectionIds { get; } = new HashSet<string>();
+
+        public void OnClientConnected(string connectionId)
+        {
+            lock (_lock)
+            {
+                ConnectionIds.Add(connectionId);
+                Console.WriteLine($"Hallo sagt Client {connectionId}. Connected clients: {ConnectionIds.Count}");
+            }
+        }
+
+        public void OnClientDisconnected(string connectionId)
+        {
+            lock (_lock)
+            {
+                ConnectionIds.Remove(connectionId);
+                Console.WriteLine($"Tschüss sagt Client {connectionId}. Connected clients: {ConnectionIds.Count}");
+            }
+        }
+
+        public int NumberOfConnectedClients => ConnectionIds.Count;
+    }
+
+    public class DataPublisher
+    {
+        IDisposable? _action;
+        readonly object _lock = new object();
+
+        public void Start(Func<Task> action)
+        {
+            Console.WriteLine("Start publishing data");
+            lock (_lock)
+            {
+                _action = Scheduler.Default.ScheduleAsync(async (scheduler, cancellationToken) =>
+                {
+                    while (!cancellationToken.IsCancellationRequested)
+                    {
+                        await action().ConfigureAwait(false);
+                        await scheduler.Sleep(TimeSpan.FromSeconds(0.5), cancellationToken).ConfigureAwait(false);
+                    }
+                });
+            }
+        }
+
+        public void Stop()
+        {
+            lock (_lock)
+            {
+                if (_action != null)
+                {
+                    _action?.Dispose();
+                    _action = null;
+                    Console.WriteLine("Stopped publishing data");
+                }
+            }
         }
     }
 }

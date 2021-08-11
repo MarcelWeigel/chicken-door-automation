@@ -5,7 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Application.Driver;
 using ChickenDoorDriver;
+//using Emgu.CV;
 using FunicularSwitch;
+using OpenCvSharp;
 
 namespace Driver
 {
@@ -24,8 +26,12 @@ namespace Driver
         private SensorData[] _sensorData;
         private int _currentIndex = 0;
 
+        private VideoCapture _capture;
+
         public Result<Unit> Init()
         {
+            _capture = new VideoCapture(0);
+
             Run();
 
             var data = System.IO.File.ReadAllText("Data_202104102216.json");
@@ -101,11 +107,37 @@ namespace Driver
 
         public Result<Unit> OpenDoor() => Drive(DoorDirection.Up, UpSpeed);
 
+        public Result<Unit> TurnLightOn()
+        {
+            return Unit.Instance;
+        }
+
+        public Result<Unit> TurnLightOff()
+        {
+            return Unit.Instance;
+        }
+
         public Result<bool> IsOpeningDoor() => _currentDirection == DoorDirection.Up;
 
         public Result<bool> IsClosingDoor() => _currentDirection == DoorDirection.Down;
 
         public Result<DoorDirection> GetDirection() => _currentDirection;
+
+        public Result<string> ReadVideoCapture()
+        {
+            string imgSrc = "";
+            using (var frame = new Mat())
+            {
+
+                _capture.Read(frame);
+
+                var base64 = Convert.ToBase64String(frame.ToBytes());
+                imgSrc = $"data:image/gif;base64,{base64}";
+            }
+
+            return imgSrc;
+        }
+
         public Result<SensorData> ReadSensorData()
         {
             _currentIndex = (_currentIndex + 1) % _sensorData.Length;
@@ -125,6 +157,8 @@ namespace Driver
         public void Dispose()
         {
             Console.WriteLine("Clean up sensors");
+
+            _capture.Dispose();
         }
     }
 }

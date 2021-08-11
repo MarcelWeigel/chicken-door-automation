@@ -29,10 +29,13 @@ namespace Application.Driver
         Result<Unit> EmergencyStop();
         Result<Unit> CloseDoor();
         Result<Unit> OpenDoor();
+        Result<Unit> TurnLightOn();
+        Result<Unit> TurnLightOff();
         Result<bool> IsOpeningDoor();
         Result<bool> IsClosingDoor();
         Result<DoorDirection> GetDirection();
         Result<SensorData> ReadSensorData();
         Result<DoorInfo> GetDoorInfo();
+        Result<string> ReadVideoCapture();
     }
 }

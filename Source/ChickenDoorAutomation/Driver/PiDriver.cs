@@ -304,6 +304,20 @@ namespace Driver
 
         public Result<Unit> OpenDoor() => Drive(DoorDirection.Up, UpSpeed);
 
+        public Result<Unit> TurnLightOn()
+        {
+            _controller.Write(Pin.DC12_2, PinValue.High);
+
+            return Unit.Instance;
+        }
+
+        public Result<Unit> TurnLightOff()
+        {
+            _controller.Write(Pin.DC12_2, PinValue.Low);
+
+            return Unit.Instance;
+        }
+
         public Result<bool> IsOpeningDoor() => _currentDirection == DoorDirection.Up;
 
         public Result<bool> IsClosingDoor() => _currentDirection == DoorDirection.Down;
@@ -381,6 +395,11 @@ namespace Driver
             _amg88xx.ReadImage();
             var temperatureImage = _amg88xx.TemperatureImage;
             return ConvertTemperatureImage(temperatureImage);
+        }
+
+        public Result<string> ReadVideoCapture()
+        {
+            return "";
         }
 
         public void Dispose()

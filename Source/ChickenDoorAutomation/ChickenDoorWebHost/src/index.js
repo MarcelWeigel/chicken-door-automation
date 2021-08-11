@@ -75,6 +75,10 @@ var Client = /** @class */ (function () {
         this.positionElement = document.querySelector("#position");
         this.closeDoorButton = document.querySelector("#closeDoor");
         this.openDoorButton = document.querySelector("#openDoor");
+        this.stopMotorButton = document.querySelector("#stopMotor");
+        this.turnLightOnButton = document.querySelector("#turnLightOn");
+        this.turnLightOffButton = document.querySelector("#turnLightOff");
+        this.videoCapture = document.querySelector("#videoCapture");
         this.imgHeatMap = document.querySelector("#imgHeatMap");
         this.pDistance = document.querySelector("#pDistance");
         this.pHallTop = document.querySelector("#pHallTop");
@@ -113,11 +117,16 @@ var Client = /** @class */ (function () {
             .build();
         this.connection.on("sensorDataUpdated", function (sensorData) { return _this.onSensorDataUpdated(sensorData); });
         this.connection.on("doorInfoUpdated", function (doorInfo) { return _this.onDoorInfoUpdated(doorInfo); });
+        this.connection.on("videoCaptureUpdated", function (videoCapture) { return _this.onVideoCaptureUpdated(videoCapture); });
         this.connection.start().catch(function (err) { return document.write(err); });
-        setInterval(function () { return _this.readSensorData(); }, 500);
-        setInterval(function () { return _this.readDoorInfo(); }, 500);
+        //setInterval(() => this.readSensorData(), 500);
+        //setInterval(() => this.readDoorInfo(), 500); 
+        //setInterval(() => this.readVideoCapture(), 1000); 
         this.closeDoorButton.addEventListener("click", function () { return _this.connection.send("closeDoor").then(function () { }); });
         this.openDoorButton.addEventListener("click", function () { return _this.connection.send("openDoor").then(function () { }); });
+        this.stopMotorButton.addEventListener("click", function () { return _this.connection.send("stopMotor").then(function () { }); });
+        this.turnLightOnButton.addEventListener("click", function () { return _this.connection.send("turnLightOn").then(function () { }); });
+        this.turnLightOffButton.addEventListener("click", function () { return _this.connection.send("turnLightOff").then(function () { }); });
     };
     Client.prototype.readSensorData = function () {
         this.connection.send("readSensorData")
@@ -125,6 +134,10 @@ var Client = /** @class */ (function () {
     };
     Client.prototype.readDoorInfo = function () {
         this.connection.send("readDoorInfo")
+            .then(function () { });
+    };
+    Client.prototype.readVideoCapture = function () {
+        this.connection.send("readVideoCapture")
             .then(function () { });
     };
     Client.prototype.onSensorDataUpdated = function (sensorData) {
@@ -153,6 +166,9 @@ var Client = /** @class */ (function () {
         this.doorStateElement.innerText = doorInfo.doorState;
         this.doorDirectionElement.innerText = doorInfo.doorDirection;
         this.positionElement.innerText = doorInfo.position;
+    };
+    Client.prototype.onVideoCaptureUpdated = function (videoCapture) {
+        this.videoCapture.src = videoCapture;
     };
     Client.prototype.convertToLog = function (value) {
         if (!value) {

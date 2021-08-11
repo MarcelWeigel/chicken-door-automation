@@ -85,6 +85,11 @@ class Client {
 
     private closeDoorButton: HTMLElement;
     private openDoorButton: HTMLElement;
+    private stopMotorButton: HTMLElement;
+    private turnLightOnButton: HTMLElement;
+    private turnLightOffButton: HTMLElement;
+
+    private videoCapture: HTMLImageElement;
 
     private imgHeatMap: HTMLImageElement;
     private pDistance: HTMLElement;
@@ -130,6 +135,11 @@ class Client {
 
         this.closeDoorButton = document.querySelector("#closeDoor");
         this.openDoorButton = document.querySelector("#openDoor");
+        this.stopMotorButton = document.querySelector("#stopMotor");
+        this.turnLightOnButton = document.querySelector("#turnLightOn");
+        this.turnLightOffButton = document.querySelector("#turnLightOff");
+
+        this.videoCapture = document.querySelector("#videoCapture");
 
         this.imgHeatMap = document.querySelector("#imgHeatMap");
         this.pDistance = document.querySelector("#pDistance");
@@ -173,14 +183,19 @@ class Client {
 
         this.connection.on("sensorDataUpdated", (sensorData: any) => this.onSensorDataUpdated(sensorData));
         this.connection.on("doorInfoUpdated", (doorInfo: any) => this.onDoorInfoUpdated(doorInfo));
+        this.connection.on("videoCaptureUpdated", (videoCapture: any) => this.onVideoCaptureUpdated(videoCapture));
 
         this.connection.start().catch(err => document.write(err));
 
-        setInterval(() => this.readSensorData(), 500);
-        setInterval(() => this.readDoorInfo(), 500); 
+        //setInterval(() => this.readSensorData(), 500);
+        //setInterval(() => this.readDoorInfo(), 500); 
+        //setInterval(() => this.readVideoCapture(), 1000); 
 
         this.closeDoorButton.addEventListener("click", () => this.connection.send("closeDoor").then(() => { }));
         this.openDoorButton.addEventListener("click", () => this.connection.send("openDoor").then(() => { }));
+        this.stopMotorButton.addEventListener("click", () => this.connection.send("stopMotor").then(() => { }));
+        this.turnLightOnButton.addEventListener("click", () => this.connection.send("turnLightOn").then(() => { }));
+        this.turnLightOffButton.addEventListener("click", () => this.connection.send("turnLightOff").then(() => { }));
     }
 
     private readSensorData(): void {
@@ -190,6 +205,11 @@ class Client {
 
     private readDoorInfo(): void {
         this.connection.send("readDoorInfo")
+            .then(() => { });
+    }
+
+    private readVideoCapture(): void {
+        this.connection.send("readVideoCapture")
             .then(() => { });
     }
 
@@ -221,6 +241,10 @@ class Client {
         this.doorStateElement.innerText = doorInfo.doorState;
         this.doorDirectionElement.innerText = doorInfo.doorDirection;
         this.positionElement.innerText = doorInfo.position;
+    }
+
+    private onVideoCaptureUpdated(videoCapture: any): void {
+        this.videoCapture.src = videoCapture;
     }
 
     private convertToLog(value: number): number {

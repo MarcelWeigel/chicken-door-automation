@@ -57,7 +57,10 @@ namespace ChickenDoorWebHost
             builder.AddMvcOptions(o => { o.Filters.Add(new GlobalExceptionFilter(services)); });
 
             //services.AddSingleton<IDriver, MockDriver>();
-            services.AddSingleton<IDriver, PiDriver>();
+            //services.AddSingleton<IDriver, PiDriver>();
+            services.AddSingleton<IDriver, BasicPiDriver>();
+            services.AddSingleton<DataPublisher>();
+            services.AddSingleton<ClientTracking>();
 
             services.AddTransient<OpenDoorCommand>();
             services.AddTransient<CloseDoorCommand>();
@@ -66,6 +69,8 @@ namespace ChickenDoorWebHost
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver, IHostApplicationLifetime hostApplicationLifetime)
         {
+            Console.WriteLine($"Starting with driver {driver.GetType().Name}");
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
