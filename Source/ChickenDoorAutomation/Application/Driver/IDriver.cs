@@ -25,7 +25,7 @@ namespace Application.Driver
 
     public interface IDriver : IDisposable
     {
-        Result<Unit> Init();
+        Result<Unit> Start();
         Result<Unit> EmergencyStop();
         Result<Unit> CloseDoor();
         Result<Unit> OpenDoor();

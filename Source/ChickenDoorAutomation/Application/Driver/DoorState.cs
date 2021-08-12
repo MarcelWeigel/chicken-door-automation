@@ -2,11 +2,10 @@
 {
     public enum DoorState
     {
-        Init,
+        Unknown,
         Open,
         Closed,
         Opening,
         Closing,
-        Error
     }
 }

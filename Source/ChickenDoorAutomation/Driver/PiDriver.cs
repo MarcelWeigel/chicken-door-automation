@@ -49,7 +49,7 @@ namespace Driver
 
         private double _currentSpeed = 1;
         private DoorDirection _currentDirection = DoorDirection.None;
-        private DoorState _currentDoorState = DoorState.Init;
+        private DoorState _currentDoorState = DoorState.Unknown;
         private double _upperDistance = 0;
         private double _lowerDistance = 0;
         private double _distanceFactor = 0;
@@ -70,7 +70,7 @@ namespace Driver
         private Amg88xx _amg88xx;
         private Mpu9250 _mpu9250;
 
-        public Result<Unit> Init()
+        public Result<Unit> Start()
         {
             _controller = new GpioController(PinNumberingScheme.Logical, new RaspberryPi3Driver());
             _controller.OpenPin(Pin.HallBottom, PinMode.InputPullUp);
@@ -94,7 +94,7 @@ namespace Driver
             _controller.Write(Pin.DC12_2, PinValue.Low);
 
 
-            Console.WriteLine($"Init sensor");
+            Console.WriteLine($"Start sensor");
 
             _bh1750Fvi = new Bh1750fvi(I2cDevice.Create(new I2cConnectionSettings(1, Bh1750fviExtenstion.DefaultI2cAddress))); // 23
 
@@ -133,7 +133,7 @@ namespace Driver
             Thread.Sleep(100);
 
 
-            Console.WriteLine($"Finished Init sensor");
+            Console.WriteLine($"Finished Start sensor");
 
             Run();
 
@@ -279,7 +279,6 @@ namespace Driver
                     _currentDoorState = DoorState.Closing;
                     break;
                 default:
-                    _currentDoorState = DoorState.Error;
                     return Result.Error<Unit>($"{nameof(direction)} type has no member '${direction}'.");
             }
             return Unit.Instance;
