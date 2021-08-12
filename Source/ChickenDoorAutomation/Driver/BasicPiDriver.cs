@@ -109,12 +109,18 @@ namespace Driver
                     }
 
                     var now = DateTime.Now;
-                    if (now.TimeOfDay > _closeTime && now.TimeOfDay < _closeTime.Add(TimeSpan.FromMinutes(15))
-                                                      && _currentDoorState == DoorState.Closed)
+                    if (now.TimeOfDay > _closeTime
+                        && now.TimeOfDay < _closeTime.Add(TimeSpan.FromMinutes(15)) 
+                        && _currentDoorState != DoorState.Open 
+                        && _currentDoorState != DoorState.Opening)
                     {
                         Drive(DoorDirection.Up, UpSpeed);
-                    } else if (now.TimeOfDay > _openTime && now.TimeOfDay < _openTime.Add(TimeSpan.FromMinutes(15))
-                                                              && _currentDoorState == DoorState.Open)
+                    }
+                    else if (now.TimeOfDay > _openTime 
+                             && now.TimeOfDay < _openTime.Add(TimeSpan.FromMinutes(15))
+                             && _currentDoorState != DoorState.Closed
+                             && _currentDoorState != DoorState.Closing
+                             )
                     {
                         Drive(DoorDirection.Down, DownSpeed);
                     }
@@ -140,21 +146,22 @@ namespace Driver
                     {
                         //if (_currentDirection == DoorDirection.None || _currentDirection == DoorDirection.Down)
                         //{
-                            Console.WriteLine("Go Up");
-                            Drive(DoorDirection.Up, UpSpeed);
+                        Console.WriteLine("Go Up");
+                        Drive(DoorDirection.Up, UpSpeed);
                         //} 
                         //else if (_currentDirection == DoorDirection.Up)
                         //{
                         //    Console.WriteLine("Double Up stop Motor");
                         //    EmergencyStop();
                         //}
-                        
-                    } else if (_controller.Read(Pin.TasterDown) == PinValue.High)
+
+                    }
+                    else if (_controller.Read(Pin.TasterDown) == PinValue.High)
                     {
                         //if (_currentDirection == DoorDirection.None || _currentDirection == DoorDirection.Up)
                         //{
-                            Console.WriteLine("Go Down");
-                            Drive(DoorDirection.Down, DownSpeed);
+                        Console.WriteLine("Go Down");
+                        Drive(DoorDirection.Down, DownSpeed);
                         //}
                         //else if (_currentDirection == DoorDirection.Up)
                         //{
@@ -221,7 +228,8 @@ namespace Driver
             if (_currentDirection == DoorDirection.Up)
             {
                 SetCurrentDoorState(DoorState.Open);
-            } else if (_currentDirection == DoorDirection.Down)
+            }
+            else if (_currentDirection == DoorDirection.Down)
             {
                 SetCurrentDoorState(DoorState.Closed);
             }
@@ -262,7 +270,7 @@ namespace Driver
         {
             return new DoorInfo
             {
-                DoorState = DoorState.Init,
+                DoorState = _currentDoorState,
                 DoorDirection = _currentDirection,
                 Position = 20
             };
@@ -274,7 +282,7 @@ namespace Driver
             _data.Add(data);
             if (_data.Count == 400)
             {
-                var dataFile = File.Create($"Data_{DateTime.Now.ToString("yyyyMMddHHmm")}.json");
+                var dataFile = File.Create($"Data_{DateTime.Now:yyyyMMddHHmm}.json");
                 var fileWriter = new StreamWriter(dataFile);
                 fileWriter.WriteLine(JsonSerializer.Serialize(_data.ToArray()));
                 fileWriter.Dispose();
@@ -287,7 +295,6 @@ namespace Driver
             string imgSrc = "";
             using (var frame = new Mat())
             {
-
                 _capture.Read(frame);
 
                 var base64 = Convert.ToBase64String(frame.ToBytes());
@@ -300,7 +307,7 @@ namespace Driver
         public void Dispose()
         {
             Console.WriteLine("Clean up sensors");
-
+            
             _capture.Dispose();
         }
     }
