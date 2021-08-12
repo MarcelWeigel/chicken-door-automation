@@ -2,28 +2,16 @@
 using System.Collections.Generic;
 using System.Device.Gpio;
 using System.Device.Gpio.Drivers;
-using System.Device.I2c;
 using System.Device.Pwm;
 using System.Device.Pwm.Drivers;
 using System.IO;
-using System.Numerics;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Driver;
 using ChickenDoorDriver;
 using FunicularSwitch;
-using Iot.Device.Amg88xx;
-using Iot.Device.Bh1750fvi;
-using Iot.Device.Bmxx80;
-using Iot.Device.Bmxx80.PowerMode;
-using Iot.Device.Imu;
-using Iot.Device.Magnetometer;
-using Iot.Device.Vl53L0X;
 using OpenCvSharp;
-using UnitsNet;
-using MeasurementMode = Iot.Device.Vl53L0X.MeasurementMode;
 
 namespace Driver
 {
@@ -59,8 +47,13 @@ namespace Driver
 
         private VideoCapture _capture;
 
+        readonly TimeSpan _closeTime = TimeSpan.FromHours(20).Add(TimeSpan.FromMinutes(10));
+        readonly TimeSpan _openTime = TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(15));
+
         public Result<Unit> Init()
         {
+            Console.WriteLine($"Init driver at {DateTime.Now}. Door will close at {_closeTime} and open at {_openTime}");
+
             _controller = new GpioController(PinNumberingScheme.Logical, new RaspberryPi3Driver());
             _controller.OpenPin(Pin.HallBottom, PinMode.InputPullUp);
             _controller.OpenPin(Pin.HallTop, PinMode.InputPullUp);
@@ -100,7 +93,7 @@ namespace Driver
             _tokenSource = new CancellationTokenSource();
             CancellationToken ct = _tokenSource.Token;
 
-            var task = Task.Run(() =>
+            var task = Task.Run(async () =>
             {
                 _isRunning = true;
 
@@ -114,6 +107,18 @@ namespace Driver
                         _pwmMotor.Stop();
                         _isRunning = false;
                     }
+
+                    var now = DateTime.Now;
+                    if (now.TimeOfDay > _closeTime && now.TimeOfDay < _closeTime.Add(TimeSpan.FromMinutes(15))
+                                                      && _currentDoorState == DoorState.Closed)
+                    {
+                        Drive(DoorDirection.Up, UpSpeed);
+                    } else if (now.TimeOfDay > _openTime && now.TimeOfDay < _openTime.Add(TimeSpan.FromMinutes(15))
+                                                              && _currentDoorState == DoorState.Open)
+                    {
+                        Drive(DoorDirection.Down, DownSpeed);
+                    }
+
                     if (_controller.Read(Pin.HallTop) == PinValue.Low && _currentDirection == DoorDirection.Up)
                     {
                         Console.WriteLine("Reached top stopping");
@@ -157,8 +162,8 @@ namespace Driver
                         //    EmergencyStop();
                         //}
                     }
-                    
-                    Thread.Sleep(100);
+
+                    await Task.Delay(TimeSpan.FromMilliseconds(100), ct);
                 }
             }, _tokenSource.Token);
         }
@@ -178,17 +183,23 @@ namespace Driver
                     break;
                 case DoorDirection.Up:
                     _controller.Write(Pin.MotorLeft, PinValue.High);
-                    _currentDoorState = DoorState.Opening;
+                    SetCurrentDoorState(DoorState.Opening);
                     break;
                 case DoorDirection.Down:
                     _controller.Write(Pin.MotorRight, PinValue.High);
-                    _currentDoorState = DoorState.Closing;
+                    SetCurrentDoorState(DoorState.Closing);
                     break;
                 default:
-                    _currentDoorState = DoorState.Error;
+                    SetCurrentDoorState(DoorState.Error);
                     return Result.Error<Unit>($"{nameof(direction)} type has no member '${direction}'.");
             }
             return Unit.Instance;
+        }
+
+        void SetCurrentDoorState(DoorState state)
+        {
+            _currentDoorState = state;
+            Console.WriteLine($"Current door state set to: {_currentDoorState}");
         }
 
         public Result<Unit> EmergencyStop()
@@ -209,10 +220,10 @@ namespace Driver
             _currentSpeed = 0;
             if (_currentDirection == DoorDirection.Up)
             {
-                _currentDoorState = DoorState.Open;
+                SetCurrentDoorState(DoorState.Open);
             } else if (_currentDirection == DoorDirection.Down)
             {
-                _currentDoorState = DoorState.Closed;
+                SetCurrentDoorState(DoorState.Closed);
             }
             _currentDirection = DoorDirection.None;
 

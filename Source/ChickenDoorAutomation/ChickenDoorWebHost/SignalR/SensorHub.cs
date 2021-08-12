@@ -94,12 +94,12 @@ namespace ChickenDoorWebHost.SignalR
 
         public void TurnLightOn()
         {
-            _driver.EmergencyStop();
+            _driver.TurnLightOn();
         }
 
         public void TurnLightOff()
         {
-            _driver.EmergencyStop();
+            _driver.TurnLightOff();
         }
 
 
