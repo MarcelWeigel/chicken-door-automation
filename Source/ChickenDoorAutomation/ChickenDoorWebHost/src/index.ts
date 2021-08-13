@@ -82,6 +82,7 @@ class Client {
     private doorStateElement: HTMLElement;
     private doorDirectionElement: HTMLElement;
     private positionElement: HTMLElement;
+    private cpuTemperatureElement: HTMLElement;
 
     private closeDoorButton: HTMLElement;
     private openDoorButton: HTMLElement;
@@ -132,6 +133,7 @@ class Client {
         this.doorStateElement = document.querySelector("#doorStatus");
         this.doorDirectionElement = document.querySelector("#doorDirection");
         this.positionElement = document.querySelector("#position");
+        this.cpuTemperatureElement = document.querySelector("#cputemperature");
 
         this.closeDoorButton = document.querySelector("#closeDoor");
         this.openDoorButton = document.querySelector("#openDoor");
@@ -241,6 +243,7 @@ class Client {
         this.doorStateElement.innerText = doorInfo.doorState;
         this.doorDirectionElement.innerText = doorInfo.doorDirection;
         this.positionElement.innerText = doorInfo.position;
+        this.cpuTemperatureElement.innerText = doorInfo.cpuTemperature;
     }
 
     private onVideoCaptureUpdated(videoCapture: any): void {

@@ -32,6 +32,7 @@ namespace ChickenDoorWebHost.SignalR
         public string? DoorState { get; set; }
         public string? DoorDirection { get; set; }
         public double Position { get; set; }
+        public double CpuTemperature { get; set; }
     }
 
     public class SensorHub : Hub
@@ -130,7 +131,8 @@ namespace ChickenDoorWebHost.SignalR
             {
                 DoorState = doorInfo.DoorState.ToString(),
                 DoorDirection = doorInfo.DoorDirection.ToString(),
-                Position = doorInfo.Position
+                Position = doorInfo.Position,
+                CpuTemperature = doorInfo.CpuTemperature
             };
         }
 

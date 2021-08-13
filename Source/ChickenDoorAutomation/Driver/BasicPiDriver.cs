@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Application.Driver;
 using ChickenDoorDriver;
 using FunicularSwitch;
+using Iot.Device.CpuTemperature;
 using OpenCvSharp;
 
 namespace Driver
@@ -189,7 +190,8 @@ namespace Driver
             {
                 DoorState = _currentDoorState,
                 DoorDirection = _currentDirection,
-                Position = 20
+                Position = 20,
+                CpuTemperature = HardwareMonitor.CpuTemperature
             };
         }
 
@@ -198,6 +200,12 @@ namespace Driver
         public void Dispose()
         {
         }
+    }
+
+    public static class HardwareMonitor
+    {
+        static readonly CpuTemperature CpuTemp = new CpuTemperature();
+        public static double CpuTemperature => CpuTemp.IsAvailable ? CpuTemp.Temperature.DegreesCelsius : -1;
     }
 
     public class HardwareFactory

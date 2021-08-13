@@ -7,5 +7,6 @@ namespace Application.Driver
         public DoorState DoorState { get; set; }
         public DoorDirection DoorDirection { get; set; }
         public double Position { get; set; }
+        public double CpuTemperature { get; set; }
     }
 }

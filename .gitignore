@@ -3,3 +3,4 @@ obj
 bin
 *.csproj.user
 *.DotSettings.user
+/Source/ChickenDoorAutomation/ChickenDoorWebHost/node_modules

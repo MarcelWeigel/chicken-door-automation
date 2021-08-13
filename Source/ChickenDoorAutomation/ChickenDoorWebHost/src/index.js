@@ -73,6 +73,7 @@ var Client = /** @class */ (function () {
         this.doorStateElement = document.querySelector("#doorStatus");
         this.doorDirectionElement = document.querySelector("#doorDirection");
         this.positionElement = document.querySelector("#position");
+        this.cpuTemperatureElement = document.querySelector("#cputemperature");
         this.closeDoorButton = document.querySelector("#closeDoor");
         this.openDoorButton = document.querySelector("#openDoor");
         this.stopMotorButton = document.querySelector("#stopMotor");
@@ -166,6 +167,8 @@ var Client = /** @class */ (function () {
         this.doorStateElement.innerText = doorInfo.doorState;
         this.doorDirectionElement.innerText = doorInfo.doorDirection;
         this.positionElement.innerText = doorInfo.position;
+        this.cpuTemperatureElement.innerText = doorInfo.cpuTemperature;
+
     };
     Client.prototype.onVideoCaptureUpdated = function (videoCapture) {
         this.videoCapture.src = videoCapture;
