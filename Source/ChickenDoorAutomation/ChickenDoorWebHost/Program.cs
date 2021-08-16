@@ -29,7 +29,7 @@ namespace ChickenDoorWebHost
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder
-                        .UseContentRoot(AssemblyDirectory)
+                        //.UseContentRoot(AssemblyDirectory)
                         .UseStartup<Startup>()
                         .UseUrls(/*"https://*:5001", */"http://*:5000");
                 });

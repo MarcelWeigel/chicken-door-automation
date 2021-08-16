@@ -5,11 +5,6 @@
     <title>Senors</title>
 </head>
 <body>
-<ul>
-    <li>DoorState: <span id="doorStatus"></span></li>
-    <li>DoorDirection: <span id="doorDirection"></span></li>
-    <li>Position: <span id="position"></span></li>
-</ul>
 <div class="button-container">
     <button id="closeDoor">Close</button>
     <button id="openDoor">Open</button>
@@ -17,51 +12,9 @@
     <button id="turnLightOn">Light On</button>
     <button id="turnLightOff">Light Off</button>
 </div>
-<img id="videoCapture" width="1100" height="750" src="" />
-<ul class="sensore-list">
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Heatmap</span></div>
-        <div class="sensore-value-container"><img width="130" height="130" id="imgHeatMap"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Hall Top</span></div>
-        <div class="sensore-value-container" id="pHallTop"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Hall Bottom</span></div>
-        <div class="sensore-value-container" id="pHallBottom"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Taster</span></div>
-        <div class="sensore-value-container" id="pTaster"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Photoelectric Barrier</span></div>
-        <div class="sensore-value-container" id="pPhotoelectricBarrier"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Distance</span></div>
-        <div class="sensore-value-container" id="pDistance"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Illuminance</span></div>
-        <div class="sensore-value-container" id="pIlluminance"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Gyroscope</span></div>
-        <div class="sensore-value-container" id="pGyroscope"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Accelerometer</span></div>
-        <div class="sensore-value-container" id="pAccelerometer"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Magnetometer</span></div>
-        <div class="sensore-value-container" id="pMagnetometer"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Temperature</span></div>
-        <div class="sensore-value-container" id="pTemperature"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Pressure</span></div>
-        <div class="sensore-value-container" id="pPressure"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Humidity</span></div>
-        <div class="sensore-value-container" id="pHumidity"></div></li>
-    <li class="sensore">
-        <div class="sensore-name-container"><span class="sensore-name">Altitude</span></div>
-        <div class="sensore-value-container" id="pAltitude"></div></li>
-</ul>
-
+<div class="video-capture-container">
+    <img id="videoCapture" class="video-capture" src="" />
+</div>
+    
 </body>
 </html>

@@ -56,13 +56,11 @@ namespace ChickenDoorWebHost
             services.AddSingleton<IProblemFactory, ProblemFactory>();
             builder.AddMvcOptions(o => { o.Filters.Add(new GlobalExceptionFilter(services)); });
 
-            //services.AddSingleton<IDriver, MockDriver>();
-            //services.AddSingleton<IDriver, PiDriver>();
-
             services.AddSingleton(_ => HardwareFactory.CreateGpioController());
             services.AddSingleton(_ => HardwareFactory.CreateMotor());
             services.AddSingleton(_ => HardwareFactory.CreateVideoCapture());
-            services.AddTransient<IChickenDoorControl, ChickenDoorControl>();
+            //services.AddTransient<IChickenDoorControl, ChickenDoorControl>();
+            services.AddTransient<IChickenDoorControl, MockChickenDoorControl>();
             services.AddSingleton<IDriver, BasicPiDriver>();
             services.AddSingleton<DataPublisher>();
             services.AddSingleton<ClientTracking>();
