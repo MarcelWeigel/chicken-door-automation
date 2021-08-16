@@ -59,8 +59,8 @@ namespace ChickenDoorWebHost
             services.AddSingleton(_ => HardwareFactory.CreateGpioController());
             services.AddSingleton(_ => HardwareFactory.CreateMotor());
             services.AddSingleton(_ => HardwareFactory.CreateVideoCapture());
-            //services.AddTransient<IChickenDoorControl, ChickenDoorControl>();
-            services.AddTransient<IChickenDoorControl, MockChickenDoorControl>();
+            services.AddTransient<IChickenDoorControl, ChickenDoorControl>();
+            //services.AddTransient<IChickenDoorControl, MockChickenDoorControl>();
             services.AddSingleton<IDriver, BasicPiDriver>();
             services.AddSingleton<DataPublisher>();
             services.AddSingleton<ClientTracking>();
