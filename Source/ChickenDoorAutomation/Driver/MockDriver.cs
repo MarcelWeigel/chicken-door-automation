@@ -28,7 +28,7 @@ namespace Driver
 
         private VideoCapture _capture;
 
-        public Result<Unit> Init()
+        public Result<Unit> Start()
         {
             _capture = new VideoCapture(0);
 
@@ -148,7 +148,7 @@ namespace Driver
         {
             return new DoorInfo
             {
-                DoorState = DoorState.Init,
+                DoorState = DoorState.Unknown,
                 DoorDirection = _currentDirection,
                 Position = 20
             };

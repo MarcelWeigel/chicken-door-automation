@@ -58,6 +58,11 @@ namespace ChickenDoorWebHost
 
             //services.AddSingleton<IDriver, MockDriver>();
             //services.AddSingleton<IDriver, PiDriver>();
+
+            services.AddSingleton(_ => HardwareFactory.CreateGpioController());
+            services.AddSingleton(_ => HardwareFactory.CreateMotor());
+            services.AddSingleton(_ => HardwareFactory.CreateVideoCapture());
+            services.AddTransient<IChickenDoorControl, ChickenDoorControl>();
             services.AddSingleton<IDriver, BasicPiDriver>();
             services.AddSingleton<DataPublisher>();
             services.AddSingleton<ClientTracking>();
@@ -79,7 +84,7 @@ namespace ChickenDoorWebHost
             app.UseCors(builder =>
                 {
                     builder
-                        .WithOrigins(new string[] { "http://localhost:8080", "https://mathiasreichardt.github.io", "https://hypermedia.marcel-weigel.de" })
+                        .WithOrigins("http://localhost:8080", "https://mathiasreichardt.github.io", "https://hypermedia.marcel-weigel.de")
                         //.AllowAnyOrigin()
                         .AllowAnyMethod()
                         .AllowAnyHeader()
@@ -106,12 +111,12 @@ namespace ChickenDoorWebHost
                 await context.Response.WriteAsync(JsonConvert.SerializeObject(problem));
             });
 
-            driver.Init();
+            driver.Start();
 
             hostApplicationLifetime.ApplicationStopping.Register(OnShutdown);
         }
 
-        private void OnShutdown()
+        void OnShutdown()
         {
         }
     }
