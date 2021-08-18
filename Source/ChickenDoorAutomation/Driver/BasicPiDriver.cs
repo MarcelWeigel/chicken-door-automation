@@ -16,6 +16,7 @@ namespace Driver
     public class BasicPiDriver : IDriver
     {
         readonly IChickenDoorControl _chickenDoorControl;
+        readonly IExternalNotification _externalNotification;
         DoorDirection _currentDirection = DoorDirection.None;
         DoorState _currentDoorState = DoorState.Unknown;
         const double UpSpeed = 0.5; //0.70;
@@ -24,12 +25,13 @@ namespace Driver
         CancellationTokenSource? _tokenSource;
         Task? _task;
 
-        readonly TimeSpan _closeTime = TimeSpan.FromHours(20).Add(TimeSpan.FromMinutes(10));
-        readonly TimeSpan _openTime = TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(15));
+        readonly TimeSpan _closeTime = TimeSpan.FromHours(20).Add(TimeSpan.FromMinutes(05));
+        readonly TimeSpan _openTime = TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(05));
 
-        public BasicPiDriver(IChickenDoorControl chickenDoorControl)
+        public BasicPiDriver(IChickenDoorControl chickenDoorControl, IExternalNotification externalNotification)
         {
             _chickenDoorControl = chickenDoorControl;
+            _externalNotification = externalNotification;
             Console.WriteLine($"Start driver at {DateTime.Now} with control {chickenDoorControl.GetType().Name}. Door will close at {_closeTime} and open at {_openTime}");
         }
 
@@ -74,7 +76,7 @@ namespace Driver
                         && _currentDoorState != DoorState.Open
                         && _currentDoorState != DoorState.Opening)
                     {
-                        Drive(Direction.Up, UpSpeed);
+                        await Drive(Direction.Up, UpSpeed).ConfigureAwait(false);
                     }
                     else if (now.TimeOfDay > _openTime
                              && now.TimeOfDay < _openTime.Add(TimeSpan.FromMinutes(15))
@@ -82,29 +84,29 @@ namespace Driver
                              && _currentDoorState != DoorState.Closing
                     )
                     {
-                        Drive(Direction.Down, DownSpeed);
+                        await Drive(Direction.Down, DownSpeed).ConfigureAwait(false);
                     }
 
                     if (_chickenDoorControl.HallTopReached() && _currentDirection == DoorDirection.Up)
                     {
                         Console.WriteLine("Reached top stopping");
-                        ReachedStop();
+                        await ReachedStop().ConfigureAwait(false);
                     }
                     if (_chickenDoorControl.HallBottomReached() && _currentDirection == DoorDirection.Down)
                     {
                         Console.WriteLine("Reached bottom stopping");
-                        ReachedStop();
+                        await ReachedStop().ConfigureAwait(false);
                     }
 
                     if (_chickenDoorControl.TasterUpPressed)
                     {
                         Console.WriteLine("Taster up pressed");
-                        Drive(Direction.Up, UpSpeed);
+                        await Drive(Direction.Up, UpSpeed);
                     }
                     else if (_chickenDoorControl.TasterDownPressed)
                     {
                         Console.WriteLine("Taster down pressed");
-                        Drive(Direction.Down, DownSpeed);
+                        await Drive(Direction.Down, DownSpeed);
                     }
 
                     try
@@ -118,49 +120,52 @@ namespace Driver
             }, _tokenSource.Token);
         }
 
-        Result<Unit> Drive(Direction direction, double speed)
+        async Task<Result<Unit>> Drive(Direction direction, double speed)
         {
             Console.WriteLine($"Drive in direction: '{direction}'.");
 
             _chickenDoorControl.Drive(direction, speed);
-            SetCurrentDoorState(direction.Match(up => DoorState.Opening, down => DoorState.Closing));
+            await SetCurrentDoorState(direction.Match(up => DoorState.Opening, down => DoorState.Closing))
+                .ConfigureAwait(false);
             _currentDirection = direction.Match(up => DoorDirection.Up, down => DoorDirection.Down);
             return No.Thing;
         }
 
-        void SetCurrentDoorState(DoorState state)
+        async Task SetCurrentDoorState(DoorState state)
         {
             _currentDoorState = state;
             Console.WriteLine($"Current door state set to: {_currentDoorState}");
+            if (_currentDoorState == DoorState.Open || _currentDoorState == DoorState.Closed)
+                await _externalNotification.Notify(_currentDoorState, ReadVideoCapture().GetValueOrDefault() ?? "");
         }
 
-        public Result<Unit> EmergencyStop()
+        public async Task<Result<Unit>> EmergencyStop()
         {
             _chickenDoorControl.Stop();
             _currentDirection = DoorDirection.None;
-            SetCurrentDoorState(DoorState.Unknown);
+            await SetCurrentDoorState(DoorState.Unknown).ConfigureAwait(false);
             return No.Thing;
         }
 
-        public Result<Unit> ReachedStop()
+        public async Task<Result<Unit>> ReachedStop()
         {
             _chickenDoorControl.Stop();
             if (_currentDirection == DoorDirection.Up)
             {
-                SetCurrentDoorState(DoorState.Open);
+                await SetCurrentDoorState(DoorState.Open);
             }
             else if (_currentDirection == DoorDirection.Down)
             {
-                SetCurrentDoorState(DoorState.Closed);
+                await SetCurrentDoorState(DoorState.Closed);
             }
             _currentDirection = DoorDirection.None;
 
             return No.Thing;
         }
 
-        public Result<Unit> CloseDoor() => Drive(Direction.Down, DownSpeed);
+        public Task<Result<Unit>> CloseDoor() => Drive(Direction.Down, DownSpeed);
 
-        public Result<Unit> OpenDoor() => Drive(Direction.Up, UpSpeed);
+        public Task<Result<Unit>> OpenDoor() => Drive(Direction.Up, UpSpeed);
 
         public Result<Unit> TurnLightOn()
         {
@@ -429,4 +434,50 @@ namespace Driver
         public static async Task<T> Match<T>(this Task<Direction> direction, Func<Direction.Up_, T> up, Func<Direction.Down_, T> down) => (await direction.ConfigureAwait(false)).Match(up, down);
         public static async Task<T> Match<T>(this Task<Direction> direction, Func<Direction.Up_, Task<T>> up, Func<Direction.Down_, Task<T>> down) => await(await direction.ConfigureAwait(false)).Match(up, down).ConfigureAwait(false);
     }
+
+    public class ChickDoorControlMock : IChickenDoorControl
+    {
+        public bool HallTopReached()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool HallBottomReached()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TasterUpPressed { get; }
+        public bool TasterDownPressed { get; }
+        public Result<Unit> Drive(Direction direction, double speed)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result<Unit> Stop()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result<Unit> TurnLightOn()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result<Unit> TurnLightOff()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Result<string> ReadVideoCapture()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Shutdown()
+        {
+            throw new NotImplementedException();
+        }
+    }
+    
 }

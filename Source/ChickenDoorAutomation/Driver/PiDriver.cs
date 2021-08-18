@@ -284,11 +284,11 @@ namespace Driver
             return Unit.Instance;
         }
 
-        public Result<Unit> EmergencyStop()
+        public Task<Result<Unit>> EmergencyStop()
         {
             if (_controller == null)
             {
-                return Result.Error<Unit>("Controller was not initialized.");
+                return Task.FromResult(Result.Error<Unit>("Controller was not initialized."));
             }
 
             _controller.Write(Pin.MotorLeft, PinValue.Low);
@@ -296,12 +296,12 @@ namespace Driver
             _currentDirection = DoorDirection.None;
             _currentSpeed = 0;
 
-            return Unit.Instance;
+            return Task.FromResult(Result.Ok(Unit.Instance));
         }
 
-        public Result<Unit> CloseDoor() => Drive(DoorDirection.Down, DownSpeed);
+        public Task<Result<Unit>> CloseDoor() => Task.FromResult(Drive(DoorDirection.Down, DownSpeed));
 
-        public Result<Unit> OpenDoor() => Drive(DoorDirection.Up, UpSpeed);
+        public Task<Result<Unit>> OpenDoor() => Task.FromResult(Drive(DoorDirection.Up, UpSpeed));
 
         public Result<Unit> TurnLightOn()
         {

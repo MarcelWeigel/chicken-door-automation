@@ -95,17 +95,17 @@ namespace Driver
             return Unit.Instance;
         }
 
-        public Result<Unit> EmergencyStop()
+        public Task<Result<Unit>> EmergencyStop()
         {
             _currentDirection = DoorDirection.Down;
             _currentSpeed = 0;
 
-            return Unit.Instance;
+            return Task.FromResult(Result<Unit>.Ok(Unit.Instance));
         }
 
-        public Result<Unit> CloseDoor() => Drive(DoorDirection.Down, DownSpeed);
+        public Task<Result<Unit>> CloseDoor() => Task.FromResult(Drive(DoorDirection.Down, DownSpeed));
 
-        public Result<Unit> OpenDoor() => Drive(DoorDirection.Up, UpSpeed);
+        public Task<Result<Unit>> OpenDoor() => Task.FromResult(Drive(DoorDirection.Up, UpSpeed));
 
         public Result<Unit> TurnLightOn()
         {

@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Application", "Application\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Driver", "Driver\Driver.csproj", "{25C06449-5BBC-4DDB-977F-6ECBD012CE02}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeatMapTest", "HeatMapTest\HeatMapTest.csproj", "{93F27767-F4A5-48B5-B67A-D88BDEE7C479}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HeatMapTest", "HeatMapTest\HeatMapTest.csproj", "{93F27767-F4A5-48B5-B67A-D88BDEE7C479}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChickenDoor.Test", "ChickenDoor.Test\ChickenDoor.Test.csproj", "{5EBE284F-A968-4C2B-97AC-AA44F7D7DFBC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{93F27767-F4A5-48B5-B67A-D88BDEE7C479}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{93F27767-F4A5-48B5-B67A-D88BDEE7C479}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{93F27767-F4A5-48B5-B67A-D88BDEE7C479}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5EBE284F-A968-4C2B-97AC-AA44F7D7DFBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5EBE284F-A968-4C2B-97AC-AA44F7D7DFBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5EBE284F-A968-4C2B-97AC-AA44F7D7DFBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5EBE284F-A968-4C2B-97AC-AA44F7D7DFBC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

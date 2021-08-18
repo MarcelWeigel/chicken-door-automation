@@ -1,6 +1,8 @@
-﻿using Application.Command;
+﻿using System.Threading.Tasks;
+using Application.Command;
 using Application.Query;
 using ChickenDoorWebHost.Controller.Door.Actions;
+using FunicularSwitch;
 using Microsoft.AspNetCore.Mvc;
 using WebApi.HypermediaExtensions.WebApi.AttributedRoutes;
 
@@ -28,14 +30,14 @@ namespace ChickenDoorWebHost.Controller.Door
                     error => Problem(error));
 
         [HttpPostHypermediaAction("OpenDoor", typeof(OpenDoorAction))]
-        public ActionResult OpenDoor() =>
+        public Task<ObjectResult> OpenDoor() =>
             _openDoorCommand.Open()
                 .Match(
                     c => Ok(StatusCode(200)),
                     error => Problem(error));
 
         [HttpPostHypermediaAction("CloseDoor", typeof(CloseDoorAction))]
-        public ActionResult CloseDoor() =>
+        public Task<ObjectResult> CloseDoor() =>
             _closeDoorCommand.Close()
                 .Match(
                     c => Ok(StatusCode(200)),

@@ -1,4 +1,5 @@
-﻿using Application.Driver;
+﻿using System.Threading.Tasks;
+using Application.Driver;
 using FunicularSwitch;
 
 namespace Application.Command
@@ -12,6 +13,6 @@ namespace Application.Command
             _driver = driver;
         }
 
-        public Result<Unit> Open() => _driver.OpenDoor();
+        public Task<Result<Unit>> Open() => _driver.OpenDoor();
     }
 }

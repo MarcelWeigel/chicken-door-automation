@@ -5,7 +5,9 @@ using Application.Command;
 using Application.Driver;
 using Application.Query;
 using Bluehands.Hypermedia.MediaTypes;
+using ChickenDoorWebHost.Config;
 using ChickenDoorWebHost.GlobalExceptionHandler;
+using ChickenDoorWebHost.Mail;
 using ChickenDoorWebHost.Problems;
 using ChickenDoorWebHost.SignalR;
 using Driver;
@@ -14,6 +16,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
@@ -63,6 +66,7 @@ namespace ChickenDoorWebHost
             services.AddSingleton(_ => HardwareFactory.CreateMotor());
             services.AddSingleton(_ => HardwareFactory.CreateVideoCapture());
             services.AddTransient<IChickenDoorControl, ChickenDoorControl>();
+            //services.AddTransient<IChickenDoorControl, ChickDoorControlMock>();
             services.AddSingleton<IDriver, BasicPiDriver>();
             services.AddSingleton<DataPublisher>();
             services.AddSingleton<ClientTracking>();
@@ -70,9 +74,12 @@ namespace ChickenDoorWebHost
             services.AddTransient<OpenDoorCommand>();
             services.AddTransient<CloseDoorCommand>();
             services.AddTransient<GetDoorDirectionQuery>();
+
+            services.AddSingleton(serviceProvider => serviceProvider.GetService<IConfiguration>().GetSection(nameof(MailConfig)).Get<MailConfig>());
+            services.AddTransient<IExternalNotification, SendGridMailer>();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver, IHostApplicationLifetime hostApplicationLifetime)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver, IHostApplicationLifetime hostApplicationLifetime, IExternalNotification externalNotification)
         {
             Console.WriteLine($"Starting with driver {driver.GetType().Name}");
 
