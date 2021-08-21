@@ -25,8 +25,8 @@ namespace Driver
         CancellationTokenSource? _tokenSource;
         Task? _task;
 
-        readonly TimeSpan _closeTime = TimeSpan.FromHours(20).Add(TimeSpan.FromMinutes(05));
-        readonly TimeSpan _openTime = TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(05));
+        readonly TimeSpan _closeTime = TimeSpan.FromHours(19).Add(TimeSpan.FromMinutes(45));
+        readonly TimeSpan _openTime = TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(00));
 
         public BasicPiDriver(IChickenDoorControl chickenDoorControl, IExternalNotification externalNotification)
         {
@@ -135,8 +135,25 @@ namespace Driver
         {
             _currentDoorState = state;
             Console.WriteLine($"Current door state set to: {_currentDoorState}");
+            if (_currentDoorState == DoorState.Opening)
+            {
+                TurnLightOn();
+            }
+
             if (_currentDoorState == DoorState.Open || _currentDoorState == DoorState.Closed)
+            {
+                //read some frames, because after a while of inactivity old frames are received
+                for (var i = 0; i < 10; i++)
+                {
+                    ReadVideoCapture();
+                }
                 await _externalNotification.Notify(_currentDoorState, ReadVideoCapture().GetValueOrDefault() ?? "");
+            }
+
+            if (_currentDoorState != DoorState.Opening)
+            {
+                TurnLightOff();
+            }
         }
 
         public async Task<Result<Unit>> EmergencyStop()
@@ -331,7 +348,12 @@ namespace Driver
         public Result<string> ReadVideoCapture()
         {
             using var frame = new Mat();
-            _capture.Read(frame);
+            var captureResult =_capture.Read(frame);
+            if (!captureResult)
+            {
+                //TODO: just for testing, return Error if this is happening
+                Console.WriteLine("WARNING: Failed to capture video frame");
+            }
 
             var base64 = Convert.ToBase64String(frame.ToBytes());
             var imgSrc = $"data:image/gif;base64,{base64}";
