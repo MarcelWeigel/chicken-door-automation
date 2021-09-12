@@ -25,8 +25,8 @@ namespace Driver
         CancellationTokenSource? _tokenSource;
         Task? _task;
 
-        readonly TimeSpan _closeTime = TimeSpan.FromHours(19).Add(TimeSpan.FromMinutes(45));
-        readonly TimeSpan _openTime = TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(00));
+        readonly TimeSpan _closeTime = TimeSpan.FromHours(19).Add(TimeSpan.FromMinutes(30));
+        readonly TimeSpan _openTime = TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(30));
 
         public BasicPiDriver(IChickenDoorControl chickenDoorControl, IExternalNotification externalNotification)
         {
@@ -98,12 +98,12 @@ namespace Driver
                         await ReachedStop().ConfigureAwait(false);
                     }
 
-                    if (_chickenDoorControl.TasterUpPressed)
+                    if (_chickenDoorControl.TasterUpPressed && !_chickenDoorControl.HallTopReached())
                     {
                         Console.WriteLine("Taster up pressed");
                         await Drive(Direction.Up, UpSpeed);
                     }
-                    else if (_chickenDoorControl.TasterDownPressed)
+                    else if (_chickenDoorControl.TasterDownPressed && !_chickenDoorControl.HallBottomReached())
                     {
                         Console.WriteLine("Taster down pressed");
                         await Drive(Direction.Down, DownSpeed);
