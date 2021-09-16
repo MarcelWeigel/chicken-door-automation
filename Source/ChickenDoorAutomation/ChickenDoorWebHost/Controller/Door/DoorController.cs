@@ -22,7 +22,7 @@ namespace ChickenDoorWebHost.Controller.Door
         }
 
         [HttpGetHypermediaObject(typeof(DoorHto))]
-        public ActionResult GetLight() =>
+        public ActionResult GetDoor() =>
             _getDoorDirectionQuery
                 .Get()
                 .Match(direction =>

@@ -146,16 +146,16 @@ namespace Driver
 
         private void Calibrate()
         {
-            OpenDoor();
-            while (_currentDoorState != DoorState.Open)
+            CloseDoor();
+            while (_currentDoorState != DoorState.Closed)
             {
                 Thread.Sleep(100);
             }
 
             _upperDistance = _vl53L0X.Distance;
 
-            CloseDoor();
-            while (_currentDoorState != DoorState.Closed)
+            OpenDoor();
+            while (_currentDoorState != DoorState.Open)
             {
                 Thread.Sleep(100);
             }
@@ -164,13 +164,13 @@ namespace Driver
             var distanceDifference = _lowerDistance - _upperDistance;
             _distanceFactor = 100 / distanceDifference;
 
-            OpenDoor();
-            while (_currentDoorState != DoorState.Open)
+            CloseDoor();
+            while (_currentDoorState != DoorState.Closed)
             {
                 Thread.Sleep(100);
             }
 
-            _currentDoorState = DoorState.Open;
+            _currentDoorState = DoorState.Closed;
         }
 
         private void Run()
@@ -192,7 +192,7 @@ namespace Driver
                         _pwmMotor.Stop();
                         _isRunning = false;
                     }
-                    if (_controller.Read(Pin.HallTop) == PinValue.Low && _currentDirection == DoorDirection.Up)
+                    if (_controller.Read(Pin.HallTop) == PinValue.Low && _currentDirection == DoorDirection.Down)
                     {
                         Console.WriteLine("Reached top stopping");
                         _controller.Write(Pin.MotorLeft, PinValue.Low);
@@ -200,9 +200,9 @@ namespace Driver
                         _controller.Write(Pin.DC12_1, PinValue.Low);
                         _controller.Write(Pin.DC12_2, PinValue.Low);
                         _currentDirection = DoorDirection.None;
-                        _currentDoorState = DoorState.Open;
+                        _currentDoorState = DoorState.Closed;
                     }
-                    if (_controller.Read(Pin.HallBottom) == PinValue.Low && _currentDirection == DoorDirection.Down)
+                    if (_controller.Read(Pin.HallBottom) == PinValue.Low && _currentDirection == DoorDirection.Up)
                     {
                         Console.WriteLine("Reached bottom stopping");
                         _controller.Write(Pin.MotorLeft, PinValue.Low);
@@ -210,7 +210,7 @@ namespace Driver
                         _currentDirection = DoorDirection.None;
                         _controller.Write(Pin.DC12_1, PinValue.Low);
                         _controller.Write(Pin.DC12_2, PinValue.Low);
-                        _currentDoorState = DoorState.Closed;
+                        _currentDoorState = DoorState.Open;
                     }
 
                     //if (_controller.Read(Pin.EmergencyTop) == PinValue.High)
@@ -222,13 +222,13 @@ namespace Driver
                     //    _currentDoorState = DoorState.Error;
                     //}
 
-                    if (_controller.Read(Pin.PhotoelectricBarrier) == PinValue.Low && _currentDirection == DoorDirection.Down)
+                    if (_controller.Read(Pin.PhotoelectricBarrier) == PinValue.Low && _currentDirection == DoorDirection.Up)
                     {
                         Console.WriteLine("Direction was down");
                         _controller.Write(Pin.MotorRight, PinValue.Low);
                         _controller.Write(Pin.MotorLeft, PinValue.High);
-                        _currentDirection = DoorDirection.Up;
-                        _currentDoorState = DoorState.Opening;
+                        _currentDirection = DoorDirection.Down;
+                        _currentDoorState = DoorState.Closing;
                     }
                     Thread.Sleep(100);
                 }
@@ -266,17 +266,17 @@ namespace Driver
             {
                 case DoorDirection.None:
                     break;
-                case DoorDirection.Up:
+                case DoorDirection.Down:
                     _controller.Write(Pin.MotorLeft, PinValue.High);
                     _controller.Write(Pin.DC12_1, PinValue.High);
                     _controller.Write(Pin.DC12_2, PinValue.High);
-                    _currentDoorState = DoorState.Opening;
+                    _currentDoorState = DoorState.Closing;
                     break;
-                case DoorDirection.Down:
+                case DoorDirection.Up:
                     _controller.Write(Pin.MotorRight, PinValue.High);
                     _controller.Write(Pin.DC12_1, PinValue.High);
                     _controller.Write(Pin.DC12_2, PinValue.High);
-                    _currentDoorState = DoorState.Closing;
+                    _currentDoorState = DoorState.Opening;
                     break;
                 default:
                     return Result.Error<Unit>($"{nameof(direction)} type has no member '${direction}'.");
@@ -299,9 +299,9 @@ namespace Driver
             return Task.FromResult(Result.Ok(Unit.Instance));
         }
 
-        public Task<Result<Unit>> CloseDoor() => Task.FromResult(Drive(DoorDirection.Down, DownSpeed));
+        public Task<Result<Unit>> OpenDoor() => Task.FromResult(Drive(DoorDirection.Up, DownSpeed));
 
-        public Task<Result<Unit>> OpenDoor() => Task.FromResult(Drive(DoorDirection.Up, UpSpeed));
+        public Task<Result<Unit>> CloseDoor() => Task.FromResult(Drive(DoorDirection.Down, UpSpeed));
 
         public Result<Unit> TurnLightOn()
         {
@@ -317,9 +317,9 @@ namespace Driver
             return Unit.Instance;
         }
 
-        public Result<bool> IsOpeningDoor() => _currentDirection == DoorDirection.Up;
-
         public Result<bool> IsClosingDoor() => _currentDirection == DoorDirection.Down;
+
+        public Result<bool> IsOpeningDoor() => _currentDirection == DoorDirection.Up;
 
         public Result<DoorDirection> GetDirection() => _currentDirection;
 

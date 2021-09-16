@@ -63,12 +63,12 @@ namespace Driver
             }, _tokenSource.Token);
         }
 
-        public bool HallTopReached() => _doorPosition == UpperRange;
+        public bool HallBottomReached() => _doorPosition == UpperRange;
 
-        public bool HallBottomReached() => _doorPosition == LowerRange;
+        public bool HallTopReached() => _doorPosition == LowerRange;
 
-        public bool TasterUpPressed => false;
         public bool TasterDownPressed => false;
+        public bool TasterUpPressed => false;
         public Result<Unit> Drive(Direction direction, double speed)
         {
             if (speed < 0) speed = 0;

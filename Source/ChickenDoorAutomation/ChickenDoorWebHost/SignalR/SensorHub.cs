@@ -78,14 +78,14 @@ namespace ChickenDoorWebHost.SignalR
             await ReadDoorInfo();
         }
 
-        public void OpenDoor()
-        {
-            _driver.OpenDoor();
-        }
-
         public void CloseDoor()
         {
             _driver.CloseDoor();
+        }
+
+        public void OpenDoor()
+        {
+            _driver.OpenDoor();
         }
 
         public void StopMotor()

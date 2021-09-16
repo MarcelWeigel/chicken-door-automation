@@ -70,8 +70,8 @@ namespace ChickenDoorWebHost
             services.AddTransient<CloseDoorCommand>();
             services.AddTransient<GetDoorDirectionQuery>();
 
-            services.UseMockDoor();
-            //services.UseRealDoor();
+            //services.UseMockDoor();
+            services.UseRealDoor();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver, IHostApplicationLifetime hostApplicationLifetime)

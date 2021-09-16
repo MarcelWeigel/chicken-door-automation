@@ -13,6 +13,6 @@ namespace Application.Command
             _driver = driver;
         }
 
-        public Task<Result<Unit>> Close() => _driver.CloseDoor();
+        public Task<Result<Unit>> Close() => _driver.OpenDoor();
     }
 }

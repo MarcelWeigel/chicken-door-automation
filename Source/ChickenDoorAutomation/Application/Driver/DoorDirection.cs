@@ -7,7 +7,7 @@ namespace ChickenDoorDriver
     public enum DoorDirection
     {
         None,
-        Up,
-        Down
+        Down,
+        Up
     }
 }

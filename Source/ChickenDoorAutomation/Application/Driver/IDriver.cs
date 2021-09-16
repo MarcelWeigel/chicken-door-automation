@@ -27,12 +27,12 @@ namespace Application.Driver
     {
         Result<Unit> Start();
         Task<Result<Unit>> EmergencyStop();
-        Task<Result<Unit>> CloseDoor();
         Task<Result<Unit>> OpenDoor();
+        Task<Result<Unit>> CloseDoor();
         Result<Unit> TurnLightOn();
         Result<Unit> TurnLightOff();
-        Result<bool> IsOpeningDoor();
         Result<bool> IsClosingDoor();
+        Result<bool> IsOpeningDoor();
         Result<DoorDirection> GetDirection();
         Result<SensorData> ReadSensorData();
         Result<DoorInfo> GetDoorInfo();
