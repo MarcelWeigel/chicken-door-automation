@@ -199,7 +199,15 @@ namespace ChickenDoorWebHost.SignalR
                 {
                     while (!cancellationToken.IsCancellationRequested)
                     {
-                        await action().ConfigureAwait(false);
+                        try
+                        {
+                            await action().ConfigureAwait(false);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e.Message);
+                        }
+                        
                         await scheduler.Sleep(TimeSpan.FromSeconds(0.5), cancellationToken).ConfigureAwait(false);
                     }
                 });

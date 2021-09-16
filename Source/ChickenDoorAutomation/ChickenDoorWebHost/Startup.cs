@@ -59,14 +59,9 @@ namespace ChickenDoorWebHost
             services.AddSingleton<IProblemFactory, ProblemFactory>();
             builder.AddMvcOptions(o => { o.Filters.Add(new GlobalExceptionFilter(services)); });
 
-            //services.AddSingleton<IDriver, MockDriver>();
-            //services.AddSingleton<IDriver, PiDriver>();
-
             services.AddSingleton(_ => HardwareFactory.CreateGpioController());
             services.AddSingleton(_ => HardwareFactory.CreateMotor());
             services.AddSingleton(_ => HardwareFactory.CreateVideoCapture());
-            services.AddTransient<IChickenDoorControl, ChickenDoorControl>();
-            //services.AddTransient<IChickenDoorControl, ChickDoorControlMock>();
             services.AddSingleton<IDriver, BasicPiDriver>();
             services.AddSingleton<DataPublisher>();
             services.AddSingleton<ClientTracking>();
@@ -75,11 +70,11 @@ namespace ChickenDoorWebHost
             services.AddTransient<CloseDoorCommand>();
             services.AddTransient<GetDoorDirectionQuery>();
 
-            services.AddSingleton(serviceProvider => serviceProvider.GetService<IConfiguration>().GetSection(nameof(MailConfig)).Get<MailConfig>());
-            services.AddTransient<IExternalNotification, SendGridMailer>();
+            services.UseMockDoor();
+            //services.UseRealDoor();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver, IHostApplicationLifetime hostApplicationLifetime, IExternalNotification externalNotification)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver, IHostApplicationLifetime hostApplicationLifetime)
         {
             Console.WriteLine($"Starting with driver {driver.GetType().Name}");
 
@@ -126,5 +121,19 @@ namespace ChickenDoorWebHost
         void OnShutdown()
         {
         }
+    }
+
+    public static class ChickenDoorRegistration
+    {
+        public static IServiceCollection UseRealDoor(this IServiceCollection services) =>
+            services
+                .AddTransient<IChickenDoorControl, ChickenDoorControl>()
+                .AddSingleton(serviceProvider => serviceProvider.GetService<IConfiguration>().GetSection(nameof(MailConfig)).Get<MailConfig>())
+                .AddTransient<IExternalNotification, SendGridMailer>();
+
+        public static IServiceCollection UseMockDoor(this IServiceCollection services) =>
+            services
+                .AddTransient<IChickenDoorControl, MockChickenDoorControl>()
+                .AddTransient<IExternalNotification, MockMailer>();
     }
 }
