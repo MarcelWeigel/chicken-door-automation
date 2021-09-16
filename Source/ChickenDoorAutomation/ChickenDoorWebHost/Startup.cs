@@ -70,13 +70,15 @@ namespace ChickenDoorWebHost
             services.AddTransient<CloseDoorCommand>();
             services.AddTransient<GetDoorDirectionQuery>();
 
-            //services.UseMockDoor();
-            services.UseRealDoor();
+            services.AddSingleton<IOpenCloseTimes>(new OpenCloseTimes(49.00262, 8.5220912, TimeSpan.FromHours(0.5)));
+
+            services.UseMockDoor();
+            //services.UseRealDoor();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IProblemFactory problemFactory, IDriver driver, IHostApplicationLifetime hostApplicationLifetime)
         {
-            Console.WriteLine($"Starting with driver {driver.GetType().Name}");
+            Log.Info($"Starting with driver {driver.GetType().Name}");
 
             if (env.IsDevelopment())
             {

@@ -36,12 +36,12 @@ namespace ChickenDoorWebHost.Mail
 ";
                     var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
                     var response = await mailClient.SendEmailAsync(msg);
-                    Console.WriteLine($"Mail sent to {receiver} with status code {response.StatusCode}.");
+                    Log.Info($"Mail sent to {receiver} with status code {response.StatusCode}.");
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine($"ERROR: Failed to send mail. {e}");
+                Log.Error($"Failed to send mail. {e}");
             }
         }
     }

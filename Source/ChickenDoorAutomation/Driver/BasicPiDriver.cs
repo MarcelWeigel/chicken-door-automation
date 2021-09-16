@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Device.Gpio;
 using System.Device.Gpio.Drivers;
 using System.Device.Pwm;
@@ -7,16 +8,74 @@ using System.Threading;
 using System.Threading.Tasks;
 using Application.Driver;
 using ChickenDoorDriver;
+using CoordinateSharp;
 using FunicularSwitch;
 using Iot.Device.CpuTemperature;
 using OpenCvSharp;
 
 namespace Driver
 {
+    public class OpenCloseTime
+    {
+        public TimeSpan OpenTime { get; }
+        public TimeSpan CloseTime { get; }
+
+        public OpenCloseTime(TimeSpan openTime, TimeSpan closeTime)
+        {
+            OpenTime = openTime;
+            CloseTime = closeTime;
+        }
+    }
+
+    public interface IOpenCloseTimes
+    {
+        Result<OpenCloseTime> GetOpenCloseTime(DateTime day);
+    }
+
+    public class OpenCloseTimes : IOpenCloseTimes
+    {
+        ImmutableDictionary<DateTime, OpenCloseTime> _times = ImmutableDictionary<DateTime, OpenCloseTime>.Empty;
+
+        double _lat;
+        double _long;
+        readonly TimeSpan _openCloseOffset;
+
+        readonly object _lock = new object();
+
+        public OpenCloseTimes(double lat, double @long, TimeSpan openCloseOffset)
+        {
+            _lat = lat;
+            _long = @long;
+            _openCloseOffset = openCloseOffset;
+        }
+
+        public Result<OpenCloseTime> GetOpenCloseTime(DateTime day)
+        {
+            var date = day.Date;
+            if (_times.TryGetValue(date, out var times))
+                return times;
+            lock (_lock)
+            {
+                var coordinate = new Coordinate(_lat, _long, date);
+                var sunRise = coordinate.CelestialInfo.SunRise;
+                var sunSet = coordinate.CelestialInfo.SunSet;
+                if (!sunRise.HasValue || !sunSet.HasValue)
+                    return Result.Error<OpenCloseTime>("Failed to get sunrise / sunset information");
+
+                times = new OpenCloseTime(sunRise.Value.TimeOfDay.Add(_openCloseOffset),
+                    sunSet.Value.TimeOfDay.Add(_openCloseOffset));
+                _times = _times.SetItem(date, times);
+
+                return times;
+            }
+        }
+    }
+
     public class BasicPiDriver : IDriver
     {
         readonly IChickenDoorControl _chickenDoorControl;
         readonly IExternalNotification _externalNotification;
+        readonly IOpenCloseTimes _openCloseTimes;
         DoorDirection _currentDirection = DoorDirection.None;
         DoorState _currentDoorState = DoorState.Unknown;
         const double DownSpeed = 0.4; //0.70;
@@ -25,14 +84,15 @@ namespace Driver
         CancellationTokenSource? _tokenSource;
         Task? _task;
 
-        readonly TimeSpan _closeTime = TimeSpan.FromHours(19).Add(TimeSpan.FromMinutes(30));
-        readonly TimeSpan _openTime = TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(30));
+        TimeSpan _closeTime = TimeSpan.FromHours(19).Add(TimeSpan.FromMinutes(30));
+        TimeSpan _openTime = TimeSpan.FromHours(6).Add(TimeSpan.FromMinutes(30));
 
-        public BasicPiDriver(IChickenDoorControl chickenDoorControl, IExternalNotification externalNotification)
+        public BasicPiDriver(IChickenDoorControl chickenDoorControl, IExternalNotification externalNotification, IOpenCloseTimes openCloseTimes)
         {
             _chickenDoorControl = chickenDoorControl;
             _externalNotification = externalNotification;
-            Log($"Start driver at {DateTime.Now} with control {chickenDoorControl.GetType().Name}. Door will close at {_closeTime} and open at {_openTime}");
+            _openCloseTimes = openCloseTimes;
+            Log.Info($"Start driver at {DateTime.UtcNow} with control {chickenDoorControl.GetType().Name}. Door will close at {_closeTime} and open at {_openTime}");
         }
 
         public Result<Unit> Start()
@@ -70,7 +130,9 @@ namespace Driver
                         break;
                     }
 
-                    var now = DateTime.Now;
+                    SetOpenCloseTimes();
+
+                    var now = DateTime.UtcNow;
                     if (now.TimeOfDay > _closeTime
                         && now.TimeOfDay < _closeTime.Add(TimeSpan.FromMinutes(15))
                         && _currentDoorState != DoorState.Closed
@@ -89,23 +151,23 @@ namespace Driver
 
                     if (_chickenDoorControl.HallBottomReached() && _currentDirection == DoorDirection.Down)
                     {
-                        Log("Reached top stopping");
+                        Log.Info("Reached top stopping");
                         await ReachedStop().ConfigureAwait(false);
                     }
                     if (_chickenDoorControl.HallTopReached() && _currentDirection == DoorDirection.Up)
                     {
-                        Log("Reached bottom stopping");
+                        Log.Info("Reached bottom stopping");
                         await ReachedStop().ConfigureAwait(false);
                     }
 
                     if (_chickenDoorControl.TasterDownPressed && !_chickenDoorControl.HallBottomReached())
                     {
-                        Log("Taster up pressed");
+                        Log.Info("Taster up pressed");
                         await Drive(Direction.Down, DownSpeed);
                     }
                     else if (_chickenDoorControl.TasterUpPressed && !_chickenDoorControl.HallTopReached())
                     {
-                        Log("Taster down pressed");
+                        Log.Info("Taster down pressed");
                         await Drive(Direction.Up, UpSpeed);
                     }
 
@@ -120,9 +182,23 @@ namespace Driver
             }, _tokenSource.Token);
         }
 
+        void SetOpenCloseTimes()
+        {
+             _openCloseTimes.GetOpenCloseTime(DateTime.UtcNow)
+                 .Match(openCloseTime =>
+                 {
+                     if (_openTime != openCloseTime.OpenTime || _closeTime != openCloseTime.CloseTime)
+                     {
+                         _openTime = openCloseTime.OpenTime;
+                         _closeTime = openCloseTime.CloseTime;
+                         Log.Info($"Open / close times changed. Door will open at {_openTime} and close at {_closeTime}");
+                     }
+                 }, error => Log.Warn(error));
+        }
+
         async Task<Result<Unit>> Drive(Direction direction, double speed)
         {
-            Log($"Drive in direction: '{direction}'.");
+            Log.Info($"Drive in direction: '{direction}'.");
 
             _chickenDoorControl.Drive(direction, speed);
             await SetCurrentDoorState(direction.Match(down: _ => DoorState.Closing, up: _ => DoorState.Opening))
@@ -134,7 +210,7 @@ namespace Driver
         async Task SetCurrentDoorState(DoorState state)
         {
             _currentDoorState = state;
-            Log($"Current door state set to: {_currentDoorState}");
+            Log.Info($"Current door state set to: {_currentDoorState}");
             if (_currentDoorState == DoorState.Closing)
             {
                 TurnLightOn();
@@ -154,7 +230,7 @@ namespace Driver
             {
                 TurnLightOff();
             }
-            Log($"Current door state leave");
+            Log.Info($"Current door state leave");
         }
 
         public async Task<Result<Unit>> EmergencyStop()
@@ -214,8 +290,6 @@ namespace Driver
             };
 
         public Result<string> ReadVideoCapture() => _chickenDoorControl.ReadVideoCapture();
-
-        static void Log(string message) => Console.WriteLine($"{DateTime.Now:O}: {message}");
 
         public void Dispose()
         {
@@ -306,7 +380,7 @@ namespace Driver
 
             Stop();
 
-            Log($"Driving in direction: '{direction}' with speed {speed}");
+            Log.Info($"Driving in direction: '{direction}' with speed {speed}");
             _pwmMotor.DutyCycle = speed;
             return direction.Match(
                 up =>
@@ -325,21 +399,21 @@ namespace Driver
         {
             _controller.Write(Pin.MotorLeft, PinValue.Low);
             _controller.Write(Pin.MotorRight, PinValue.Low);
-            Log("Door stopped");
+            Log.Info("Door stopped");
             return No.Thing;
         }
 
         public Result<Unit> TurnLightOn()
         {
             _controller.Write(Pin.DC12_1, PinValue.High);
-            Log("Light turned on");
+            Log.Info("Light turned on");
             return No.Thing;
         }
 
         public Result<Unit> TurnLightOff()
         {
             _controller.Write(Pin.DC12_1, PinValue.Low);
-            Log("Light turned off");
+            Log.Info("Light turned off");
             return No.Thing;
         }
 
@@ -350,7 +424,7 @@ namespace Driver
             if (!captureResult)
             {
                 //TODO: just for testing, return Error if this is happening
-                Log("WARNING: Failed to capture video frame");
+                Log.Warn("Failed to capture video frame");
             }
 
             var base64 = Convert.ToBase64String(frame.ToBytes());
@@ -362,10 +436,8 @@ namespace Driver
         {
             Stop();
             _pwmMotor.Stop();
-            Log("Shut down");
+            Log.Info("Shut down");
         }
-
-        static void Log(string message) => Console.WriteLine($"{DateTime.Now:O}: {message}");
 
         public static class Pin
         {

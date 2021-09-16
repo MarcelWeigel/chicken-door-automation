@@ -76,7 +76,7 @@ namespace Driver
 
             Stop();
 
-            Console.WriteLine($"Driving in direction: '{direction}' with speed {speed}");
+            Log.Info($"Driving in direction: '{direction}' with speed {speed}");
 
             _currentSpeed = speed;
 
@@ -97,17 +97,19 @@ namespace Driver
         {
             _moveUp = false;
             _moveDown = false;
-            Console.WriteLine("Door stopped");
+            Log.Info("Door stopped");
             return No.Thing;
         }
 
         public Result<Unit> TurnLightOn()
         {
+            Log.Info("Lights on");
             return Unit.Instance;
         }
 
         public Result<Unit> TurnLightOff()
         {
+            Log.Info("Lights off");
             return Unit.Instance;
         }
 
@@ -125,6 +127,7 @@ namespace Driver
         public void Shutdown()
         {
             Stop();
+            Log.Info("Shut down");
         }
     }
 
@@ -132,7 +135,7 @@ namespace Driver
     {
         public Task Notify(DoorState doorState, string cameraImage)
         {
-            Console.WriteLine($"Mocked External notification request: DoorState {doorState}, Image length: {cameraImage.Length}");
+            Log.Info($"Mocked External notification request: DoorState {doorState}, Image length: {cameraImage.Length}");
             return Task.CompletedTask;
         }
     }

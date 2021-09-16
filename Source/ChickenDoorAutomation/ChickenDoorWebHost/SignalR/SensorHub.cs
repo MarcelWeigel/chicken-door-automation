@@ -169,7 +169,7 @@ namespace ChickenDoorWebHost.SignalR
             lock (_lock)
             {
                 ConnectionIds.Add(connectionId);
-                Console.WriteLine($"Hallo sagt Client {connectionId}. Connected clients: {ConnectionIds.Count}");
+                Log.Info($"Hallo from client {connectionId}. Connected clients: {ConnectionIds.Count}");
             }
         }
 
@@ -178,7 +178,7 @@ namespace ChickenDoorWebHost.SignalR
             lock (_lock)
             {
                 ConnectionIds.Remove(connectionId);
-                Console.WriteLine($"Tschüss sagt Client {connectionId}. Connected clients: {ConnectionIds.Count}");
+                Log.Info($"Bye bye client {connectionId}. Connected clients: {ConnectionIds.Count}");
             }
         }
 
@@ -192,7 +192,7 @@ namespace ChickenDoorWebHost.SignalR
 
         public void Start(Func<Task> action)
         {
-            Console.WriteLine("Start publishing data");
+            Log.Info("Start publishing data");
             lock (_lock)
             {
                 _action = Scheduler.Default.ScheduleAsync(async (scheduler, cancellationToken) =>
@@ -205,7 +205,7 @@ namespace ChickenDoorWebHost.SignalR
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine(e.Message);
+                            Log.Warn($"Push data failed: {e}");
                         }
                         
                         await scheduler.Sleep(TimeSpan.FromSeconds(0.5), cancellationToken).ConfigureAwait(false);
@@ -222,7 +222,7 @@ namespace ChickenDoorWebHost.SignalR
                 {
                     _action?.Dispose();
                     _action = null;
-                    Console.WriteLine("Stopped publishing data");
+                    Log.Info("Stopped publishing data");
                 }
             }
         }

@@ -376,7 +376,7 @@ namespace Driver
             _data.Add(data);
             if (_data.Count == 400)
             {
-                var dataFile = File.Create($"Data_{DateTime.Now.ToString("yyyyMMddHHmm")}.json");
+                var dataFile = File.Create($"Data_{DateTime.UtcNow:yyyyMMddHHmm}.json");
                 var fileWriter = new StreamWriter(dataFile);
                 fileWriter.WriteLine(JsonSerializer.Serialize(_data.ToArray()));
                 fileWriter.Dispose();
