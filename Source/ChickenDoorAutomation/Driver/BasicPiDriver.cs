@@ -151,12 +151,12 @@ namespace Driver
 
                     if (_chickenDoorControl.HallBottomReached() && _currentDirection == DoorDirection.Down)
                     {
-                        Log.Info("Reached top stopping");
+                        Log.Info("Reached bottom stopping");
                         await ReachedStop().ConfigureAwait(false);
                     }
                     if (_chickenDoorControl.HallTopReached() && _currentDirection == DoorDirection.Up)
                     {
-                        Log.Info("Reached bottom stopping");
+                        Log.Info("Reached top stopping");
                         await ReachedStop().ConfigureAwait(false);
                     }
 
@@ -201,15 +201,19 @@ namespace Driver
             Log.Info($"Drive in direction: '{direction}'.");
 
             _chickenDoorControl.Drive(direction, speed);
-            await SetCurrentDoorState(direction.Match(down: _ => DoorState.Closing, up: _ => DoorState.Opening))
+            var (state, dir) = direction.Match(
+                down: _ => (DoorState.Closing, DoorDirection.Down),
+                up: _ => (DoorState.Opening, DoorDirection.Up));
+
+            await SetCurrentDoorState(state, dir)
                 .ConfigureAwait(false);
-            _currentDirection = direction.Match(down: _ => DoorDirection.Down, up: _ => DoorDirection.Up);
             return No.Thing;
         }
 
-        async Task SetCurrentDoorState(DoorState state)
+        async Task SetCurrentDoorState(DoorState state, DoorDirection direction)
         {
             _currentDoorState = state;
+            _currentDirection = direction;
             Log.Info($"Current door state set to: {_currentDoorState}");
             if (_currentDoorState == DoorState.Closing)
             {
@@ -236,23 +240,21 @@ namespace Driver
         public async Task<Result<Unit>> EmergencyStop()
         {
             _chickenDoorControl.Stop();
-            _currentDirection = DoorDirection.None;
-            await SetCurrentDoorState(DoorState.Unknown).ConfigureAwait(false);
+            await SetCurrentDoorState(DoorState.Unknown, DoorDirection.None).ConfigureAwait(false);
             return No.Thing;
         }
 
-        public async Task<Result<Unit>> ReachedStop()
+        async Task<Result<Unit>> ReachedStop()
         {
             _chickenDoorControl.Stop();
             if (_currentDirection == DoorDirection.Down)
             {
-                await SetCurrentDoorState(DoorState.Closed);
+                await SetCurrentDoorState(DoorState.Closed, DoorDirection.None);
             }
             else if (_currentDirection == DoorDirection.Up)
             {
-                await SetCurrentDoorState(DoorState.Open);
+                await SetCurrentDoorState(DoorState.Open, DoorDirection.None);
             }
-            _currentDirection = DoorDirection.None;
 
             return No.Thing;
         }

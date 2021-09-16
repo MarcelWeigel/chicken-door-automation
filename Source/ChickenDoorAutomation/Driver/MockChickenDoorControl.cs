@@ -16,9 +16,9 @@ namespace Driver
 
         double _currentSpeed = 100;
         double _doorPosition;
-        bool _moveUp;
-        bool _moveDown;
-        bool _isRunning;
+        volatile bool _moveUp;
+        volatile bool _moveDown;
+        volatile bool _isRunning;
 
         readonly VideoCapture _capture;
 
@@ -44,15 +44,15 @@ namespace Driver
                     }
                     else if (_moveUp)
                     {
-                        _doorPosition += _currentSpeed;
+                        if (_doorPosition < UpperRange)
+                            _doorPosition += _currentSpeed;
                         if (_doorPosition > UpperRange)
-                        {
                             _doorPosition = UpperRange;
-                        }
                     }
                     else if (_moveDown)
                     {
-                        _doorPosition -= _currentSpeed;
+                        if (_doorPosition > LowerRange)
+                            _doorPosition -= _currentSpeed;
                         if (_doorPosition < LowerRange)
                         {
                             _doorPosition = LowerRange;
@@ -63,9 +63,9 @@ namespace Driver
             }, _tokenSource.Token);
         }
 
-        public bool HallBottomReached() => _doorPosition == UpperRange;
+        public bool HallBottomReached() => Math.Abs(_doorPosition - UpperRange) == 0;
 
-        public bool HallTopReached() => _doorPosition == LowerRange;
+        public bool HallTopReached() => Math.Abs(_doorPosition - LowerRange) == 0;
 
         public bool TasterDownPressed => false;
         public bool TasterUpPressed => false;
