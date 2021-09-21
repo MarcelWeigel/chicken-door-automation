@@ -39,14 +39,16 @@ namespace Driver
         double _lat;
         double _long;
         readonly TimeSpan _openCloseOffset;
+        readonly TimeSpan _minOpenTime;
 
         readonly object _lock = new object();
 
-        public OpenCloseTimes(double lat, double @long, TimeSpan openCloseOffset)
+        public OpenCloseTimes(double lat, double @long, TimeSpan openCloseOffset, TimeSpan minOpenTime)
         {
             _lat = lat;
             _long = @long;
             _openCloseOffset = openCloseOffset;
+            _minOpenTime = minOpenTime;
         }
 
         public Result<OpenCloseTime> GetOpenCloseTime(DateTime day)
@@ -62,8 +64,10 @@ namespace Driver
                 if (!sunRise.HasValue || !sunSet.HasValue)
                     return Result.Error<OpenCloseTime>("Failed to get sunrise / sunset information");
 
-                times = new OpenCloseTime(sunRise.Value.TimeOfDay.Add(_openCloseOffset),
-                    sunSet.Value.TimeOfDay.Add(_openCloseOffset));
+                var openTime = sunRise.Value.TimeOfDay.Add(_openCloseOffset);
+                if (openTime < _minOpenTime) openTime = _minOpenTime;
+
+                times = new OpenCloseTime(openTime, sunSet.Value.TimeOfDay.Add(_openCloseOffset));
                 _times = _times.SetItem(date, times);
 
                 return times;
